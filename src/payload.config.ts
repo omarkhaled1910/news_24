@@ -61,6 +61,11 @@ export default buildConfig({
     // background pipelines (cron news pipeline). This project's hooks only
     // perform cache revalidation, so transactional atomicity is not required.
     transactionOptions: false,
+    // Ensure SSL/TLS works with Vercel and MongoDB Atlas
+    connectOptions: {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    },
   }),
   collections: [
     // Content
