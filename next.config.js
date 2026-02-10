@@ -18,6 +18,18 @@ const nextConfig = {
           protocol: url.protocol.replace(':', ''),
         }
       }),
+      {
+        hostname: 'i.ytimg.com',
+        protocol: 'https',
+      },
+      {
+        hostname: 'img.youtube.com',
+        protocol: 'https',
+      },
+      {
+        hostname: 'yt3.ggpht.com',
+        protocol: 'https',
+      },
     ],
   },
   webpack: (webpackConfig) => {
@@ -31,6 +43,9 @@ const nextConfig = {
   },
   reactStrictMode: true,
   redirects,
+  experimental: {
+    instrumentationHook: true,
+  },
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

@@ -1,303 +1,344 @@
-# Payload Website Template
+# News-24
 
-This is the official [Payload Website Template](https://github.com/payloadcms/payload/blob/main/templates/website). Use it to power websites, blogs, or portfolios from small to enterprise. This repo includes a fully-working backend, enterprise-grade admin panel, and a beautifully designed, production-ready website.
+An automated Arabic news website built with Next.js 15 and Payload CMS v3. Automatically fetches videos from YouTube channels, extracts transcripts, generates AI-powered news articles, and publishes them through a modern Axios-style frontend.
 
-This template is right for you if you are working on:
+## Features
 
-- A personal or enterprise-grade website, blog, or portfolio
-- A content publishing platform with a fully featured publication workflow
-- Exploring the capabilities of Payload
+- **Automated News Pipeline** - Fetches videos from YouTube channels, extracts transcripts, and generates articles automatically
+- **AI Article Generation** - Uses GPT-4o-mini to write professional Arabic news articles from video transcripts
+- **Payload CMS Admin** - Full content management system with draft/publish workflow
+- **RTL/Arabic Support** - Complete Arabic interface with proper RTL layout
+- **Modern Frontend** - Next.js 15 App Router with Server Components
+- **Breaking News Ticker** - Real-time breaking news updates
+- **Category Management** - Organize content by categories
+- **SEO Optimized** - Built-in sitemap, meta tags, and structured data
+- **Responsive Design** - Mobile, tablet, and desktop layouts
 
-Core features:
+## Tech Stack
 
-- [Pre-configured Payload Config](#how-it-works)
-- [Authentication](#users-authentication)
-- [Access Control](#access-control)
-- [Layout Builder](#layout-builder)
-- [Draft Preview](#draft-preview)
-- [Live Preview](#live-preview)
-- [On-demand Revalidation](#on-demand-revalidation)
-- [SEO](#seo)
-- [Search](#search)
-- [Redirects](#redirects)
-- [Jobs and Scheduled Publishing](#jobs-and-scheduled-publish)
-- [Website](#website)
+| Component | Technology |
+|-----------|------------|
+| Frontend | Next.js 15.4.11 (App Router) |
+| CMS | Payload CMS 3.76.0 |
+| Database | MongoDB |
+| Language | TypeScript |
+| Styling | TailwindCSS |
+| AI | OpenAI GPT-4o-mini |
+| YouTube | youtubei.js, youtube-transcript |
+| Automation | node-cron |
 
-## Quick Start
+## Architecture
 
-To spin up this example locally, follow these steps:
-
-### Clone
-
-If you have not done so already, you need to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
-
-Use the `create-payload-app` CLI to clone this template directly to your machine:
-
-```bash
-pnpx create-payload-app my-project -t website
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Automation Pipeline                         │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Cron Job (every 30 min)                                    │
+│     │                                                           │
+│  2. Fetch active channels from Payload                          │
+│     │                                                           │
+│  3. Get latest videos from YouTube (youtubei.js)                │
+│     │                                                           │
+│  4. Extract transcript (youtube-transcript)                     │
+│     │                                                           │
+│  5. Generate article (OpenAI GPT-4o-mini)                       │
+│     │                                                           │
+│  6. Download & upload thumbnail to Payload Media                │
+│     │                                                           │
+│  7. Create Article in Payload CMS                               │
+│     │                                                           │
+│  8. Display on Next.js frontend                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Development
+## Getting Started
 
-1. First [clone the repo](#clone) if you have not done so already
-1. `cd my-project && cp .env.example .env` to copy the example environment variables
-1. `pnpm install && pnpm dev` to install dependencies and start the dev server
-1. open `http://localhost:3000` to open the app in your browser
+### Prerequisites
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+- Node.js 18+
+- MongoDB 6+
+- OpenAI API key
 
-## How it works
+### Installation
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
+```bash
+# Clone the repository
+git clone <repository-url>
+cd news-24
 
-### Collections
+# Install dependencies
+pnpm install
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
+# Set up environment variables
+cp .env.example .env
 
-- #### Users (Authentication)
+# Start MongoDB (using Docker)
+docker-compose up -d
 
-  Users are auth-enabled collections that have access to the admin panel and unpublished content. See [Access Control](#access-control) for more details.
+# Run development server
+pnpm dev
+```
 
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/main/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
+### Environment Variables
 
-- #### Posts
+Create a `.env` file with the following variables:
 
-  Posts are used to generate blog posts, news articles, or any other type of content that is published over time. All posts are layout builder enabled so you can generate unique layouts for each post using layout-building blocks, see [Layout Builder](#layout-builder) for more details. Posts are also draft-enabled so you can preview them before publishing them to your website, see [Draft Preview](#draft-preview) for more details.
+```bash
+# Database
+DATABASE_URI=mongodb://localhost:27017/news24
 
-- #### Pages
+# Payload CMS
+PAYLOAD_SECRET=<your-random-secret-key>
 
-  All pages are layout builder enabled so you can generate unique layouts for each page using layout-building blocks, see [Layout Builder](#layout-builder) for more details. Pages are also draft-enabled so you can preview them before publishing them to your website, see [Draft Preview](#draft-preview) for more details.
+# Cron Job Security
+CRON_SECRET=<your-cron-secret>
 
-- #### Media
+# OpenAI (for article generation)
+OPENAI_API_KEY=<your-openai-api-key>
 
-  This is the uploads enabled collection used by pages, posts, and projects to contain media like images, videos, downloads, and other assets. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
+# Optional: Next.js
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
 
-- #### Categories
+## Project Structure
 
-  A taxonomy used to group posts together. Categories can be nested inside of one another, for example "News > Technology". See the official [Payload Nested Docs Plugin](https://payloadcms.com/docs/plugins/nested-docs) for more details.
+```
+news-24/
+├── src/
+│   ├── app/
+│   │   ├── (frontend)/           # Frontend pages
+│   │   │   ├── page.tsx          # Homepage
+│   │   │   ├── articles/         # Article pages
+│   │   │   ├── globals.css       # Global styles
+│   │   │   └── layout.tsx        # Root layout
+│   │   └── api/                  # API routes
+│   │       └── cron/             # Manual cron trigger
+│   ├── collections/              # Payload collections
+│   │   ├── Articles/             # Articles collection
+│   │   ├── Channels.ts           # YouTube channels
+│   │   ├── Videos.ts             # YouTube videos
+│   │   ├── Categories.ts         # Content categories
+│   │   ├── Media.ts              # Media management
+│   │   ├── Pages/                # Static pages
+│   │   └── Users/                # User management
+│   ├── components/               # React components
+│   │   ├── ArticleCard/          # Article card variants
+│   │   ├── BreakingNews/         # Breaking news ticker
+│   │   ├── HeroArticle/          # Hero section
+│   │   ├── Sidebar/              # Sidebar component
+│   │   ├── Footer/               # Site footer
+│   │   ├── Header/               # Site header
+│   │   └── Logo/                 # Logo component
+│   ├── utilities/                # Backend utilities
+│   │   ├── cron.ts               # Scheduled jobs
+│   │   ├── youtube.ts            # YouTube API integration
+│   │   ├── transcript.ts         # Transcript extraction
+│   │   ├── openai.ts             # AI article generation
+│   │   └── thumbnailDownloader.ts # Media handling
+│   ├── plugins/                  # Payload plugins
+│   ├── payload.config.ts         # Payload configuration
+│   └── types/                    # TypeScript types
+├── public/                       # Static assets
+├── docker-compose.yml            # MongoDB container
+├── next.config.js                # Next.js config
+├── package.json                  # Dependencies
+└── tsconfig.json                 # TypeScript config
+```
 
-### Globals
+## Usage
 
-See the [Globals](https://payloadcms.com/docs/configuration/globals) docs for details on how to extend this functionality.
+### Managing Channels
 
-- `Header`
+1. Access the Payload Admin at `http://localhost:3000/admin`
+2. Navigate to **Channels**
+3. Add a new YouTube channel:
+   - **Name**: Channel display name
+   - **YouTube Channel ID**: The channel ID from YouTube URL
+   - **Language**: Select language (default: Arabic)
+   - **Active**: Enable to include in automation
 
-  The data required by the header on your front-end like nav links.
+### Running Automation
 
-- `Footer`
+The automation runs automatically every 30 minutes. You can also trigger it manually:
 
-  Same as above but for the footer of your site.
+```bash
+# Via API (requires CRON_SECRET)
+curl -X POST http://localhost:3000/api/cron \
+  -H "Authorization: Bearer <your-cron-secret>"
+```
 
-## Access control
+### Managing Articles
 
-Basic access control is setup to limit access to various content based based on publishing status.
+- **Draft**: Articles are created as draft by default
+- **Review**: Edit articles in the admin panel
+- **Publish**: Publish when ready to appear on the site
 
-- `users`: Users can access the admin panel and create or edit content.
-- `posts`: Everyone can access published posts, but only users can create, update, or delete them.
-- `pages`: Everyone can access published pages, but only users can create, update, or delete them.
+## Automation Pipeline Details
 
-For more details on how to extend this functionality, see the [Payload Access Control](https://payloadcms.com/docs/access-control/overview#access-control) docs.
+### 1. YouTube Video Fetching (`src/utilities/youtube.ts`)
 
-## Layout Builder
+Uses `youtubei.js` to fetch the latest videos from configured channels:
+- Extracts video metadata (title, description, thumbnail, duration, views)
+- Fetches configurable number of videos per channel (default: 5)
 
-Create unique page layouts for any type of content using a powerful layout builder. This template comes pre-configured with the following layout building blocks:
+### 2. Transcript Extraction (`src/utilities/transcript.ts`)
 
-- Hero
-- Content
-- Media
-- Call To Action
-- Archive
+Implements a fallback strategy for maximum reliability:
+1. Primary: `youtube-transcript` (official API)
+2. Fallback: `youtube-caption-scraper`
+3. Last resort: Auto-generated captions
 
-Each block is fully designed and built into the front-end website that comes with this template. See [Website](#website) for more details.
+### 3. AI Article Generation (`src/utilities/openai.ts`)
 
-## Lexical editor
+Uses GPT-4o-mini with Arabic-specific prompts:
+- Neutral, journalistic writing style
+- No hallucinations - only facts from transcript
+- Proper source attribution
+- Structured output with title, excerpt, content, tags, and category
+- HTML to Lexical JSON conversion for Payload
 
-A deep editorial experience that allows complete freedom to focus just on writing content without breaking out of the flow with support for Payload blocks, media, links and other features provided out of the box. See [Lexical](https://payloadcms.com/docs/rich-text/overview) docs.
+### 4. Thumbnail Handling (`src/utilities/thumbnailDownloader.ts`)
 
-## Draft Preview
+- Downloads high-quality thumbnails from YouTube
+- Uploads to Payload Media collection
+- Handles optimization and caching
 
-All posts and pages are draft-enabled so you can preview them before publishing them to your website. To do this, these collections use [Versions](https://payloadcms.com/docs/configuration/collections#versions) with `drafts` set to `true`. This means that when you create a new post, project, or page, it will be saved as a draft and will not be visible on your website until you publish it. This also means that you can preview your draft before publishing it to your website. To do this, we automatically format a custom URL which redirects to your front-end to securely fetch the draft version of your content.
+## Frontend Components
 
-Since the front-end of this template is statically generated, this also means that pages, posts, and projects will need to be regenerated as changes are made to published documents. To do this, we use an `afterChange` hook to regenerate the front-end when a document has changed and its `_status` is `published`.
+### Homepage (`src/app/(frontend)/page.tsx`)
 
-For more details on how to extend this functionality, see the official [Draft Preview Example](https://github.com/payloadcms/payload/tree/examples/draft-preview).
+- **Hero Article**: Large featured article with breaking news badge
+- **Breaking News Ticker**: Scrolling ticker for urgent updates
+- **Latest Articles**: 8-card grid of recent articles
+- **Sidebar**: Latest articles + category navigation
 
-## Live preview
+### Article Pages
 
-In addition to draft previews you can also enable live preview to view your end resulting page as you're editing content with full support for SSR rendering. See [Live preview docs](https://payloadcms.com/docs/live-preview/overview) for more details.
+- **Listing**: `/articles` - Filterable, paginated article list
+- **Detail**: `/articles/[slug]` - Full article view with sidebar
 
-## On-demand Revalidation
+### Components
 
-We've added hooks to collections and globals so that all of your pages, posts, footer, or header changes will automatically be updated in the frontend via on-demand revalidation supported by Nextjs.
+| Component | Description |
+|-----------|-------------|
+| `HeroArticle` | Large featured article with overlay |
+| `ArticleCard` | Multiple variants (default, compact, horizontal) |
+| `BreakingNews` | Auto-scrolling ticker |
+| `Sidebar` | Latest articles + categories |
 
-> Note: if an image has been changed, for example it's been cropped, you will need to republish the page it's used on in order to be able to revalidate the Nextjs image cache.
+## API Endpoints
 
-## SEO
+### POST `/api/cron`
 
-This template comes pre-configured with the official [Payload SEO Plugin](https://payloadcms.com/docs/plugins/seo) for complete SEO control from the admin panel. All SEO data is fully integrated into the front-end website that comes with this template. See [Website](#website) for more details.
+Manually trigger the automation pipeline.
 
-## Search
+**Headers:**
+```
+Authorization: Bearer <CRON_SECRET>
+```
 
-This template also pre-configured with the official [Payload Search Plugin](https://payloadcms.com/docs/plugins/search) to showcase how SSR search features can easily be implemented into Next.js with Payload. See [Website](#website) for more details.
+**Response:**
+```json
+{
+  "success": true,
+  "channelsProcessed": 5,
+  "videosFetched": 25,
+  "articlesGenerated": 20,
+  "errors": []
+}
+```
 
-## Redirects
+## Deployment
 
-If you are migrating an existing site or moving content to a new URL, you can use the `redirects` collection to create a proper redirect from old URLs to new ones. This will ensure that proper request status codes are returned to search engines and that your users are not left with a broken link. This template comes pre-configured with the official [Payload Redirects Plugin](https://payloadcms.com/docs/plugins/redirects) for complete redirect control from the admin panel. All redirects are fully integrated into the front-end website that comes with this template. See [Website](#website) for more details.
+### Production Checklist
 
-## Jobs and Scheduled Publish
+1. Set all environment variables
+2. Configure production MongoDB (MongoDB Atlas recommended)
+3. Set up cron job or external scheduler (e.g., Vercel Cron)
+4. Configure CDN for media assets
+5. Enable sitemap generation
 
-We have configured [Scheduled Publish](https://payloadcms.com/docs/versions/drafts#scheduled-publish) which uses the [jobs queue](https://payloadcms.com/docs/jobs-queue/jobs) in order to publish or unpublish your content on a scheduled time. The tasks are run on a cron schedule and can also be run as a separate instance if needed.
+### Vercel Deployment
 
-> Note: When deployed on Vercel, depending on the plan tier, you may be limited to daily cron only.
+```bash
+# Install Vercel CLI
+npm i -g vercel
 
-## Website
+# Deploy
+vercel
+```
 
-This template includes a beautifully designed, production-ready front-end built with the [Next.js App Router](https://nextjs.org), served right alongside your Payload app in a instance. This makes it so that you can deploy both your backend and website where you need it.
-
-Core features:
-
-- [Next.js App Router](https://nextjs.org)
-- [TypeScript](https://www.typescriptlang.org)
-- [React Hook Form](https://react-hook-form.com)
-- [Payload Admin Bar](https://github.com/payloadcms/payload/tree/main/packages/admin-bar)
-- [TailwindCSS styling](https://tailwindcss.com/)
-- [shadcn/ui components](https://ui.shadcn.com/)
-- User Accounts and Authentication
-- Fully featured blog
-- Publication workflow
-- Dark mode
-- Pre-made layout building blocks
-- SEO
-- Search
-- Redirects
-- Live preview
-
-### Cache
-
-Although Next.js includes a robust set of caching strategies out of the box, Payload Cloud proxies and caches all files through Cloudflare using the [Official Cloud Plugin](https://www.npmjs.com/package/@payloadcms/payload-cloud). This means that Next.js caching is not needed and is disabled by default. If you are hosting your app outside of Payload Cloud, you can easily reenable the Next.js caching mechanisms by removing the `no-store` directive from all fetch requests in `./src/app/_api` and then removing all instances of `export const dynamic = 'force-dynamic'` from pages files, such as `./src/app/(pages)/[slug]/page.tsx`. For more details, see the official [Next.js Caching Docs](https://nextjs.org/docs/app/building-your-application/caching).
+Add the following environment variables in Vercel:
+- `DATABASE_URI`
+- `PAYLOAD_SECRET`
+- `CRON_SECRET`
+- `OPENAI_API_KEY`
 
 ## Development
 
-To spin up this example locally, follow the [Quick Start](#quick-start). Then [Seed](#seed) the database with a few pages, posts, and projects.
-
-### Working with Postgres
-
-Postgres and other SQL-based databases follow a strict schema for managing your data. In comparison to our MongoDB adapter, this means that there's a few extra steps to working with Postgres.
-
-Note that often times when making big schema changes you can run the risk of losing data if you're not manually migrating it.
-
-#### Local development
-
-Ideally we recommend running a local copy of your database so that schema updates are as fast as possible. By default the Postgres adapter has `push: true` for development environments. This will let you add, modify and remove fields and collections without needing to run any data migrations.
-
-If your database is pointed to production you will want to set `push: false` otherwise you will risk losing data or having your migrations out of sync.
-
-#### Migrations
-
-[Migrations](https://payloadcms.com/docs/database/migrations) are essentially SQL code versions that keeps track of your schema. When deploy with Postgres you will need to make sure you create and then run your migrations.
-
-Locally create a migration
-
 ```bash
-pnpm payload migrate:create
+# Run development server
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Start production server
+pnpm start
+
+# Lint code
+pnpm lint
+
+# Type check
+pnpm type-check
 ```
 
-This creates the migration files you will need to push alongside with your new configuration.
+## Collection Schemas
 
-On the server after building and before running `pnpm start` you will want to run your migrations
+### Channels
 
-```bash
-pnpm payload migrate
-```
+| Field | Type | Description |
+|-------|------|-------------|
+| name | Text | Channel display name |
+| youtubeChannelId | Text | YouTube channel ID |
+| thumbnail | Text | Channel thumbnail URL |
+| language | Select | ar / en |
+| active | Boolean | Enable/disable automation |
+| lastFetchedAt | Date | Last fetch timestamp |
+| fetchCount | Number | Total fetch count |
 
-This command will check for any migrations that have not yet been run and try to run them and it will keep a record of migrations that have been run in the database.
+### Videos
 
-### Docker
+| Field | Type | Description |
+|-------|------|-------------|
+| title | Text | Video title |
+| youtubeVideoId | Text | YouTube video ID |
+| channel | Relationship | Source channel |
+| transcript | Text | Extracted transcript |
+| status | Select | pending / fetched / transcribed / article_generated / failed |
+| errorMessage | Text | Error details if failed |
 
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
+### Articles
 
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
+| Field | Type | Description |
+|-------|------|-------------|
+| title | Text | Article title |
+| slug | Text | URL slug (unique) |
+| content | RichText | Article content (Lexical) |
+| excerpt | Text | Article summary |
+| sourceVideo | Relationship | Source YouTube video |
+| category | Relationship | Article category |
+| featured | Boolean | Show in hero section |
+| breakingNews | Boolean | Show in ticker |
+| autoGenerated | Boolean | AI-generated flag |
 
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
+## License
 
-### Seed
+MIT
 
-To seed the database with a few pages, posts, and projects you can click the 'seed database' link from the admin panel.
+## Contributing
 
-The seed script will also create a demo user for demonstration purposes only:
-
-- Demo Author
-  - Email: `demo-author@payloadcms.com`
-  - Password: `password`
-
-> NOTICE: seeding the database is destructive because it drops your current database to populate a fresh one from the seed template. Only run this command if you are starting a new project or can afford to lose your current data.
-
-## Production
-
-To run Payload in production, you need to build and start the Admin panel. To do so, follow these steps:
-
-1. Invoke the `next build` script by running `pnpm build` or `npm run build` in your project root. This creates a `.next` directory with a production-ready admin bundle.
-1. Finally run `pnpm start` or `npm run start` to run Node in production and serve Payload from the `.build` directory.
-1. When you're ready to go live, see Deployment below for more details.
-
-### Deploying to Vercel
-
-This template can also be deployed to Vercel for free. You can get started by choosing the Vercel DB adapter during the setup of the template or by manually installing and configuring it:
-
-```bash
-pnpm add @payloadcms/db-vercel-postgres
-```
-
-```ts
-// payload.config.ts
-import { vercelPostgresAdapter } from '@payloadcms/db-vercel-postgres'
-
-export default buildConfig({
-  // ...
-  db: vercelPostgresAdapter({
-    pool: {
-      connectionString: process.env.POSTGRES_URL || '',
-    },
-  }),
-  // ...
-```
-
-We also support Vercel's blob storage:
-
-```bash
-pnpm add @payloadcms/storage-vercel-blob
-```
-
-```ts
-// payload.config.ts
-import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
-
-export default buildConfig({
-  // ...
-  plugins: [
-    vercelBlobStorage({
-      collections: {
-        [Media.slug]: true,
-      },
-      token: process.env.BLOB_READ_WRITE_TOKEN || '',
-    }),
-  ],
-  // ...
-```
-
-There is also a simplified [one click deploy](https://github.com/payloadcms/payload/tree/templates/with-vercel-postgres) to Vercel should you need it.
-
-### Self-hosting
-
-Before deploying your app, you need to:
-
-1. Ensure your app builds and serves in production. See [Production](#production) for more details.
-2. You can then deploy Payload as you would any other Node.js or Next.js application either directly on a VPS, DigitalOcean's Apps Platform, via Coolify or more. More guides coming soon.
-
-You can also deploy your app manually, check out the [deployment documentation](https://payloadcms.com/docs/production/deployment) for full details.
-
-## Questions
-
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request

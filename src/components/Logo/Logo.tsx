@@ -1,5 +1,8 @@
+'use client'
+
 import clsx from 'clsx'
 import React from 'react'
+import { useI18n } from '@/i18n/client'
 
 interface Props {
   className?: string
@@ -8,22 +11,17 @@ interface Props {
 }
 
 export const Logo = (props: Props) => {
-  const { loading: loadingFromProps, priority: priorityFromProps, className } = props
-
-  const loading = loadingFromProps || 'lazy'
-  const priority = priorityFromProps || 'low'
+  const { className } = props
+  const { t } = useI18n()
 
   return (
-    /* eslint-disable @next/next/no-img-element */
-    <img
-      alt="Payload Logo"
-      width={193}
-      height={34}
-      loading={loading}
-      fetchPriority={priority}
-      decoding="async"
-      className={clsx('max-w-[9.375rem] w-full h-[34px]', className)}
-      src="https://raw.githubusercontent.com/payloadcms/payload/main/packages/ui/src/assets/payload-logo-light.svg"
-    />
+    <div className={clsx('flex items-center gap-2', className)}>
+      <div className="bg-red-600 text-white font-bold text-xl px-3 py-1 rounded-md leading-none">
+        24
+      </div>
+      <span className="text-xl font-bold text-foreground dark:text-white" style={{ fontFamily: 'Cairo, sans-serif' }}>
+        {t('common.brandText')}
+      </span>
+    </div>
   )
 }
