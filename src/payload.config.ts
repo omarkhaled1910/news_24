@@ -65,6 +65,11 @@ export default buildConfig({
     connectOptions: {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+      // TLS configuration for serverless environments (Vercel)
+      tls: true,
+      // Use the MongoDB Node.js driver's default TLS settings
+      // If you still get SSL errors, you can try:
+      // tlsAllowInvalidCertificates: false,
     },
   }),
   collections: [
