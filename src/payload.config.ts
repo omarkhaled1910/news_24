@@ -9,7 +9,6 @@ import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
-import { Channels } from './collections/Channels'
 import { Videos } from './collections/Videos'
 import { Articles } from './collections/Articles'
 import { Authors } from './collections/Authors'
@@ -70,7 +69,6 @@ export default buildConfig({
     // Taxonomies
     Categories,
     // News Automation
-    Channels,
     Videos,
     // Auth
     Users,

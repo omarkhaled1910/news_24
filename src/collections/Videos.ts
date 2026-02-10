@@ -7,7 +7,7 @@ export const Videos: CollectionConfig = {
   slug: 'videos',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'channel', 'status', 'publishedAt'],
+    defaultColumns: ['title', 'author', 'status', 'publishedAt'],
     group: 'أتمتة الأخبار',
   },
   access: {
@@ -38,12 +38,15 @@ export const Videos: CollectionConfig = {
       required: true,
     },
     {
-      name: 'channel',
-      label: 'القناة',
+      name: 'author',
+      label: 'الكاتب',
       type: 'relationship',
-      relationTo: 'channels',
+      relationTo: 'authors',
       required: true,
       index: true,
+      admin: {
+        position: 'sidebar',
+      },
     },
     {
       name: 'description',

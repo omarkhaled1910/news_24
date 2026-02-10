@@ -9,9 +9,11 @@ const translations: Record<Locale, TranslationDictionary> = {
     'common.siteName': 'أخبار 24',
     'common.brandText': 'أخبار',
     'common.dotSeparator': '•',
+    'common.page': 'صفحة',
     'nav.home': 'الرئيسية',
     'nav.latestNews': 'آخر الأخبار',
     'nav.articles': 'المقالات',
+    'nav.authors': 'الكتاب',
     'nav.quickLinks': 'روابط سريعة',
     'nav.aboutSite': 'عن الموقع',
     'nav.sections': 'الأقسام',
@@ -54,14 +56,18 @@ const translations: Record<Locale, TranslationDictionary> = {
       'موقع أخبار 24 - مصدرك الأول للأخبار العربية والعالمية. تغطية شاملة لأحدث الأخبار السياسية والاقتصادية والرياضية والتقنية.',
     'meta.articlesTitle': 'جميع المقالات | أخبار 24',
     'meta.articlesDescription': 'تصفح جميع المقالات الإخبارية على موقع أخبار 24',
+    'meta.authorsTitle': 'الكتاب | أخبار 24',
+    'meta.authorsDescription': 'تصفح جميع كتاب ومحرري أخبار 24',
   },
   en: {
     'common.siteName': 'News 24',
     'common.brandText': 'News',
     'common.dotSeparator': '•',
+    'common.page': 'Page',
     'nav.home': 'Home',
     'nav.latestNews': 'Latest News',
     'nav.articles': 'Articles',
+    'nav.authors': 'Authors',
     'nav.quickLinks': 'Quick Links',
     'nav.aboutSite': 'About',
     'nav.sections': 'Sections',
@@ -104,6 +110,8 @@ const translations: Record<Locale, TranslationDictionary> = {
       'News 24 is your source for Arabic and global news with comprehensive coverage of politics, economy, sports, and technology.',
     'meta.articlesTitle': 'All Articles | News 24',
     'meta.articlesDescription': 'Browse all news articles on News 24',
+    'meta.authorsTitle': 'Authors | News 24',
+    'meta.authorsDescription': 'Browse all authors and editors of News 24',
   },
 }
 
@@ -121,7 +129,9 @@ export const createTranslator =
   (locale: Locale) =>
   (key: string, params?: TranslationParams): string => {
     const dictionary = translations[locale]
-    const fallbackDictionary = translations.ar
+    const otherLocale: Locale = locale === 'ar' ? 'en' : 'ar'
+    const fallbackDictionary = translations[otherLocale]
+    // Try current locale first, then other locale, then key itself
     let text = dictionary[key] ?? fallbackDictionary[key] ?? key
 
     if (params) {

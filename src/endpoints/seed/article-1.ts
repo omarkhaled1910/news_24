@@ -1,0 +1,251 @@
+import type { Author, Media } from '@/payload-types'
+import { RequiredDataFromCollectionSlug } from 'payload'
+
+export type ArticleArgs = {
+  heroImage?: Media
+  author?: Author
+}
+
+export const article1: (args: ArticleArgs) => RequiredDataFromCollectionSlug<'articles'> = ({
+  heroImage,
+  author,
+}) => {
+  return {
+    title: 'مقال تجريبي للاختبار',
+    slug: 'مقال-تجريبي',
+    _status: 'published',
+    excerpt: 'هذا مقال تجريبي لاختبار نظام عرض المقالات والمؤلفين في المنصة. يمكنك رؤية كيف يظهر المحتوى على الصفحة الرئيسية وعلى صفحة تفاصيل المقال.',
+    publishedAt: new Date().toISOString(),
+    authorName: author?.name || 'كاتب تجريبي',
+    author: author?.id,
+    featured: true,
+    breakingNews: false,
+    content: {
+      root: {
+        type: 'root',
+        children: [
+          {
+            type: 'heading',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'مرحباً بك في مقالنا التجريبي',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            tag: 'h2',
+            version: 1,
+          },
+          {
+            type: 'paragraph',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'هذا مقال تجريبي تم إنشاؤه لاختبار نظام إدارة المحتوى. يمكنك استخدامه لاستكشاف كيفية عرض المقالات على الموقع.',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            textFormat: 0,
+            version: 1,
+          },
+          {
+            type: 'heading',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'ما هو الهدف من هذا المقال؟',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            tag: 'h3',
+            version: 1,
+          },
+          {
+            type: 'paragraph',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'الهدف الرئيسي هو اختبار نظام عرض المقالات والتأكد من عمل جميع المكونات بشكل صحيح، بما في ذلك:',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            textFormat: 0,
+            version: 1,
+          },
+          {
+            type: 'paragraph',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 1,
+                mode: 'normal',
+                style: '',
+                text: '• عرض العنوان والملخص\n',
+                version: 1,
+              },
+              {
+                type: 'text',
+                detail: 0,
+                format: 1,
+                mode: 'normal',
+                style: '',
+                text: '• عرض صورة المقال الرئيسية\n',
+                version: 1,
+              },
+              {
+                type: 'text',
+                detail: 0,
+                format: 1,
+                mode: 'normal',
+                style: '',
+                text: '• عرض معلومات الكاتب\n',
+                version: 1,
+              },
+              {
+                type: 'text',
+                detail: 0,
+                format: 1,
+                mode: 'normal',
+                style: '',
+                text: '• عرض تاريخ النشر\n',
+                version: 1,
+              },
+              {
+                type: 'text',
+                detail: 0,
+                format: 1,
+                mode: 'normal',
+                style: '',
+                text: '• عرض الوسوم والتصنيفات',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            textFormat: 0,
+            version: 1,
+          },
+          {
+            type: 'heading',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'كيفية التعديل على هذا المقال',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            tag: 'h3',
+            version: 1,
+          },
+          {
+            type: 'paragraph',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'يمكنك تعديل هذا المقال من خلال لوحة التحكم. انتقل إلى قسم المقالات واختر المقال الذي تريد تعديله.',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            textFormat: 0,
+            version: 1,
+          },
+          {
+            type: 'heading',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'مميزات النظام',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            tag: 'h4',
+            version: 1,
+          },
+          {
+            type: 'paragraph',
+            children: [
+              {
+                type: 'text',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'يدعم النظام عرض المقالات بتصميم متجاوب يعمل على جميع الأجهزة، مع إمكانية مشاركة المقالات على وسائل التواصل الاجتماعي.',
+                version: 1,
+              },
+            ],
+            direction: 'rtl',
+            format: '',
+            indent: 0,
+            textFormat: 0,
+            version: 1,
+          },
+        ],
+        direction: 'rtl',
+        format: '',
+        indent: 0,
+        version: 1,
+      },
+    },
+    tags: [
+      { tag: 'تجريبي' },
+      { tag: 'اختبار' },
+      { tag: 'مقال' },
+    ],
+    meta: {
+      description: 'مقال تجريبي لاختبار نظام عرض المقالات',
+      title: 'مقال تجريبي للاختبار',
+    },
+  }
+}

@@ -2,7 +2,7 @@ import React from 'react'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
-import { HeroArticle } from '@/components/HeroArticle'
+import { ArticleCarousel } from '@/components/ArticleCarousel'
 import { ArticleCard } from '@/components/ArticleCard'
 import { BreakingNewsTicker } from '@/components/BreakingNews'
 import { Sidebar } from '@/components/Sidebar'
@@ -68,11 +68,9 @@ export default async function HomePage() {
   const { locale, t } = await getServerI18n()
   const { featured, latest, breaking, categories } = await getHomepageData()
 
-  // Separate hero from the rest of the articles
-  const heroArticle = featured || latest[0]
-  const gridArticles = featured
-    ? latest.filter((a) => a.id !== featured.id).slice(0, 8)
-    : latest.slice(1, 9)
+  // Carousel articles (top 5 latest)
+  const carouselArticles = latest.slice(0, 5)
+  const gridArticles = latest.slice(5, 13)
   const sidebarArticles = latest.slice(0, 5)
 
   return (
@@ -81,18 +79,16 @@ export default async function HomePage() {
       {breaking.length > 0 && <BreakingNewsTicker articles={breaking} />}
 
       {/* Hero Section */}
+      {/* Main Carousel */}
       <section className="container mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Main Hero */}
-          <div className="lg:col-span-8">
-            {heroArticle && <HeroArticle article={heroArticle} locale={locale} />}
-          </div>
+        {carouselArticles.length > 0 && (
+          <ArticleCarousel articles={carouselArticles} locale={locale} />
+        )}
+      </section>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-4">
-            <Sidebar articles={sidebarArticles} categories={categories} locale={locale} />
-          </div>
-        </div>
+      {/* Sidebar */}
+      <section className="container mt-6">
+        <Sidebar articles={sidebarArticles} categories={categories} locale={locale} />
       </section>
 
       {/* Latest Articles Grid */}

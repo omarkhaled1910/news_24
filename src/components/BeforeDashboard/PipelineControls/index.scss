@@ -1,0 +1,58 @@
+@import '~@payloadcms/ui/scss';
+
+.pipeline-controls {
+  background: var(--theme-elevation-50);
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: var(--style-radius-m);
+  padding: base(1);
+  margin-bottom: base(1);
+  direction: rtl;
+
+  &__title {
+    margin: 0 0 base(0.5);
+    font-size: 1.1rem;
+    color: var(--theme-text);
+  }
+
+  &__buttons {
+    display: flex;
+    gap: base(0.5);
+    flex-wrap: wrap;
+  }
+
+  &__btn {
+    appearance: none;
+    border: none;
+    border-radius: var(--style-radius-s);
+    padding: base(0.35) base(0.75);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    &:hover:not(:disabled) {
+      opacity: 0.85;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &--primary {
+      background: var(--theme-success-500);
+      color: var(--theme-base-0);
+    }
+
+    &--secondary {
+      background: var(--theme-elevation-200);
+      color: var(--theme-text);
+    }
+  }
+
+  &__hint {
+    margin: base(0.5) 0 0;
+    font-size: 0.8rem;
+    color: var(--theme-elevation-500);
+  }
+}

@@ -1,5 +1,18 @@
 import OpenAI from 'openai'
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+const MAX_TRANSCRIPT_CHARS = 12_000
+const MAX_TOKENS = 4_000
+const TEMPERATURE = 0.3
+const MAX_RETRIES = 3
+const RETRY_BASE_DELAY_MS = 1_000
+
+// ---------------------------------------------------------------------------
+// OpenAI client (lazy)
+// ---------------------------------------------------------------------------
 const getOpenAIClient = () => {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -8,16 +21,68 @@ const getOpenAIClient = () => {
   return new OpenAI({ apiKey })
 }
 
+// ---------------------------------------------------------------------------
+// Retry helper
+// ---------------------------------------------------------------------------
+async function callWithRetry<T>(fn: () => Promise<T>, maxRetries = MAX_RETRIES): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (error: unknown) {
+      const status = (error as { status?: number })?.status
+      const isRetryable = typeof status === 'number' && [429, 500, 503].includes(status)
+      if (!isRetryable || attempt === maxRetries) throw error
+      const delay = RETRY_BASE_DELAY_MS * 2 ** attempt
+      console.warn(`[OpenAI] Retry ${attempt + 1}/${maxRetries} after ${delay}ms (status ${status})`)
+      await new Promise((r) => setTimeout(r, delay))
+    }
+  }
+  // Unreachable – the loop always returns or throws
+  throw new Error('[OpenAI] Retry loop exited unexpectedly')
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 export interface GeneratedArticle {
   title: string
   excerpt: string
-  content: string // HTML-like structured text that we'll convert to Lexical
+  content: string // Structured text that we convert to Lexical
   tags: string[]
-  category: string
 }
 
+export interface LexicalTextNode {
+  type: 'text'
+  text: string
+  format: number
+  detail: number
+  mode: string
+  style: string
+  version: number
+}
+
+export interface LexicalBlockNode {
+  type: 'heading' | 'paragraph' | 'root'
+  tag?: string
+  children: (LexicalTextNode | LexicalBlockNode)[]
+  direction: string
+  format: string | number
+  indent: number
+  version: number
+  textFormat?: number
+  textStyle?: string
+}
+
+export interface LexicalEditorState {
+  root: LexicalBlockNode
+}
+
+// ---------------------------------------------------------------------------
+// Article generation
+// ---------------------------------------------------------------------------
+
 /**
- * Generate a professional Arabic news article from a video transcript
+ * Generate a professional Arabic news article from a video transcript.
  */
 export async function generateArticleFromTranscript(
   transcript: string,
@@ -25,7 +90,18 @@ export async function generateArticleFromTranscript(
   channelName: string,
   youtubeUrl: string,
 ): Promise<GeneratedArticle> {
+  // Input validation
+  if (!transcript?.trim()) throw new Error('[OpenAI] Transcript is empty')
+  if (!videoTitle?.trim()) throw new Error('[OpenAI] Video title is empty')
+
   const openai = getOpenAIClient()
+
+  // Warn on truncation
+  if (transcript.length > MAX_TRANSCRIPT_CHARS) {
+    console.warn(
+      `[OpenAI] Transcript truncated from ${transcript.length} to ${MAX_TRANSCRIPT_CHARS} chars`,
+    )
+  }
 
   const systemPrompt = `أنت صحفي محترف تعمل في وكالة أنباء عربية مرموقة. مهمتك تحويل نصوص الفيديوهات الإخبارية إلى مقالات إخبارية احترافية.
 
@@ -49,8 +125,7 @@ export async function generateArticleFromTranscript(
     {"type": "heading", "text": "عنوان فرعي"},
     {"type": "paragraph", "text": "نص الفقرة"}
   ],
-  "tags": ["وسم1", "وسم2", "وسم3"],
-  "category": "تصنيف مناسب: سياسة أو اقتصاد أو رياضة أو تكنولوجيا أو ثقافة أو مجتمع أو عالم"
+  "tags": ["وسم1", "وسم2", "وسم3"]
 }`
 
   const userPrompt = `حوّل النص التالي من فيديو بعنوان "${videoTitle}" من قناة "${channelName}" إلى مقال إخباري احترافي.
@@ -58,87 +133,103 @@ export async function generateArticleFromTranscript(
 رابط المصدر: ${youtubeUrl}
 
 النص:
-${transcript.substring(0, 12000)}`
+${transcript.substring(0, MAX_TRANSCRIPT_CHARS)}`
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    response_format: { type: 'json_object' },
-    temperature: 0.3,
-    max_tokens: 4000,
-  })
+  const response = await callWithRetry(() =>
+    openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: TEMPERATURE,
+      max_tokens: MAX_TOKENS,
+    }),
+  )
 
   const responseText = response.choices[0]?.message?.content
   if (!responseText) {
-    throw new Error('No response from OpenAI')
+    throw new Error('[OpenAI] No response content from OpenAI')
   }
 
-  const parsed = JSON.parse(responseText)
+  let parsed: Record<string, unknown>
+  try {
+    parsed = JSON.parse(responseText)
+  } catch {
+    throw new Error(
+      `[OpenAI] Failed to parse response as JSON: ${responseText.substring(0, 200)}`,
+    )
+  }
 
   // Build content from paragraphs
   const contentParts: string[] = []
   if (parsed.paragraphs && Array.isArray(parsed.paragraphs)) {
-    for (const p of parsed.paragraphs) {
+    for (const p of parsed.paragraphs as { type?: string; text?: string }[]) {
       if (p.type === 'heading') {
         contentParts.push(`## ${p.text}`)
       } else {
-        contentParts.push(p.text)
+        contentParts.push(p.text ?? '')
       }
     }
   }
 
+  // Fallback logging
+  if (!parsed.title) {
+    console.warn('[OpenAI] LLM returned empty title, using video title as fallback')
+  }
+  if (!parsed.excerpt) {
+    console.warn('[OpenAI] LLM returned empty excerpt')
+  }
+  if (!Array.isArray(parsed.tags) || parsed.tags.length === 0) {
+    console.warn('[OpenAI] LLM returned empty tags array')
+  }
+
   return {
-    title: parsed.title || videoTitle,
-    excerpt: parsed.excerpt || '',
+    title: (parsed.title as string) || videoTitle,
+    excerpt: (parsed.excerpt as string) || '',
     content: contentParts.join('\n\n'),
-    tags: parsed.tags || [],
-    category: parsed.category || 'عام',
+    tags: (parsed.tags as string[]) || [],
   }
 }
 
+// ---------------------------------------------------------------------------
+// Lexical conversion
+// ---------------------------------------------------------------------------
+
+const HEADING_REGEX = /^(#{1,6})\s+(.+)$/
+
 /**
- * Convert structured text content into Payload's Lexical editor format
+ * Map heading marker length to the appropriate HTML tag.
  */
-export function convertToLexicalJSON(content: string): Record<string, unknown> {
+function headingTag(level: number): string {
+  const clamped = Math.min(Math.max(level, 1), 6)
+  return `h${clamped}`
+}
+
+/**
+ * Convert structured text content into Payload's Lexical editor format.
+ */
+export function convertToLexicalJSON(content: string): LexicalEditorState {
   const lines = content.split('\n\n').filter((line) => line.trim())
 
-  const children: Record<string, unknown>[] = []
+  const children: LexicalBlockNode[] = []
 
   for (const line of lines) {
     const trimmed = line.trim()
+    const headingMatch = HEADING_REGEX.exec(trimmed)
 
-    if (trimmed.startsWith('## ')) {
-      // Heading
+    if (headingMatch) {
+      const level = headingMatch[1].length
+      const text = headingMatch[2]
+
       children.push({
         type: 'heading',
-        tag: 'h2',
+        tag: headingTag(level),
         children: [
           {
             type: 'text',
-            text: trimmed.replace('## ', ''),
-            format: 0,
-            detail: 0,
-            mode: 'normal',
-            style: '',
-            version: 1,
-          },
-        ],
-        direction: 'rtl',
-        format: '',
-        indent: 0,
-        version: 1,
-      })
-    } else if (trimmed.startsWith('### ')) {
-      children.push({
-        type: 'heading',
-        tag: 'h3',
-        children: [
-          {
-            type: 'text',
-            text: trimmed.replace('### ', ''),
+            text,
             format: 0,
             detail: 0,
             mode: 'normal',
@@ -152,7 +243,6 @@ export function convertToLexicalJSON(content: string): Record<string, unknown> {
         version: 1,
       })
     } else {
-      // Paragraph
       children.push({
         type: 'paragraph',
         children: [

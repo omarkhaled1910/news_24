@@ -147,7 +147,7 @@ export const Authors: CollectionConfig = {
               type: 'date',
               admin: {
                 date: {
-                  pickerAppearance: 'day',
+                  pickerAppearance: 'dayOnly',
                 },
               },
             },
@@ -265,6 +265,28 @@ export const Authors: CollectionConfig = {
         { label: 'English', value: 'en' },
       ],
       admin: {
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'lastFetchedAt',
+      label: 'آخر جلب',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+      },
+    },
+    {
+      name: 'fetchCount',
+      label: 'عدد مرات الجلب',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        readOnly: true,
         position: 'sidebar',
       },
     },

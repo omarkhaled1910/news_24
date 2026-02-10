@@ -37,7 +37,7 @@ export const I18nProvider = ({
         router.refresh()
       },
     }
-  }, [initialLocale, router])
+  }, [initialLocale]) // eslint-disable-line react-hooks/exhaustive-deps -- router is intentionally omitted
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }

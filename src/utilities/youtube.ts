@@ -51,8 +51,14 @@ export async function fetchChannelVideos(
       const viewCount =
         ('view_count' in video && typeof video.view_count === 'number' && video.view_count) || 0
 
-      // Try to get the published date
+      // Try to get the published date — youtubei.js often returns a relative
+      // string like "منذ ٣ أيام" instead of an ISO date, so we must validate it.
       const publishedText = ('published' in video && video.published?.toString()) || ''
+      const parsedDate = publishedText ? new Date(publishedText) : null
+      const publishedAt =
+        parsedDate && !isNaN(parsedDate.getTime())
+          ? parsedDate.toISOString()
+          : new Date().toISOString()
 
       results.push({
         videoId,
@@ -60,7 +66,7 @@ export async function fetchChannelVideos(
         description,
         thumbnailUrl,
         youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
-        publishedAt: publishedText || new Date().toISOString(),
+        publishedAt,
         duration,
         viewCount,
       })
@@ -90,8 +96,7 @@ export async function fetchVideoDetails(videoId: string): Promise<YouTubeVideoDa
       title: basic_info.title || '',
       description: basic_info.short_description || '',
       thumbnailUrl:
-        basic_info.thumbnail?.[0]?.url ||
-        `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
+        basic_info.thumbnail?.[0]?.url || `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
       youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
       publishedAt: new Date().toISOString(),
       duration: basic_info.duration?.toString() || '',

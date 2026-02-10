@@ -35,7 +35,7 @@ An automated Arabic news website built with Next.js 15 and Payload CMS v3. Autom
 ├─────────────────────────────────────────────────────────────────┤
 │  1. Cron Job (every 30 min)                                    │
 │     │                                                           │
-│  2. Fetch active channels from Payload                          │
+│  2. Fetch active authors from Payload                           │
 │     │                                                           │
 │  3. Get latest videos from YouTube (youtubei.js)                │
 │     │                                                           │
@@ -115,7 +115,7 @@ news-24/
 │   │       └── cron/             # Manual cron trigger
 │   ├── collections/              # Payload collections
 │   │   ├── Articles/             # Articles collection
-│   │   ├── Channels.ts           # YouTube channels
+│   │   ├── Authors.ts            # YouTube authors/channels
 │   │   ├── Videos.ts             # YouTube videos
 │   │   ├── Categories.ts         # Content categories
 │   │   ├── Media.ts              # Media management
@@ -147,12 +147,12 @@ news-24/
 
 ## Usage
 
-### Managing Channels
+### Managing Authors
 
 1. Access the Payload Admin at `http://localhost:3000/admin`
-2. Navigate to **Channels**
-3. Add a new YouTube channel:
-   - **Name**: Channel display name
+2. Navigate to **Authors**
+3. Add a new YouTube author:
+   - **Name**: Author display name
    - **YouTube Channel ID**: The channel ID from YouTube URL
    - **Language**: Select language (default: Arabic)
    - **Active**: Enable to include in automation
@@ -177,9 +177,9 @@ curl -X POST http://localhost:3000/api/cron \
 
 ### 1. YouTube Video Fetching (`src/utilities/youtube.ts`)
 
-Uses `youtubei.js` to fetch the latest videos from configured channels:
+Uses `youtubei.js` to fetch the latest videos from configured authors:
 - Extracts video metadata (title, description, thumbnail, duration, views)
-- Fetches configurable number of videos per channel (default: 5)
+- Fetches configurable number of videos per author (default: 5)
 
 ### 2. Transcript Extraction (`src/utilities/transcript.ts`)
 
@@ -241,7 +241,7 @@ Authorization: Bearer <CRON_SECRET>
 ```json
 {
   "success": true,
-  "channelsProcessed": 5,
+  "authorsProcessed": 5,
   "videosFetched": 25,
   "articlesGenerated": 20,
   "errors": []
@@ -295,15 +295,24 @@ pnpm type-check
 
 ## Collection Schemas
 
-### Channels
+### Authors
 
 | Field | Type | Description |
 |-------|------|-------------|
-| name | Text | Channel display name |
-| youtubeChannelId | Text | YouTube channel ID |
-| thumbnail | Text | Channel thumbnail URL |
+| name | Text | Author display name |
+| channelId | Text | YouTube channel ID |
+| channelUrl | Text | Full YouTube channel URL |
+| handle | Text | YouTube handle (@username) |
+| thumbnailUrl | Text | Channel thumbnail URL |
+| photo | Upload | Author profile photo |
+| bio | Textarea | Author biography |
+| description | Textarea | Channel description |
+| subscriberCount | Number | Channel subscriber count |
+| videoCount | Number | Total videos on channel |
+| viewCount | Number | Total channel views |
 | language | Select | ar / en |
 | active | Boolean | Enable/disable automation |
+| featured | Boolean | Show in featured section |
 | lastFetchedAt | Date | Last fetch timestamp |
 | fetchCount | Number | Total fetch count |
 
@@ -312,11 +321,18 @@ pnpm type-check
 | Field | Type | Description |
 |-------|------|-------------|
 | title | Text | Video title |
-| youtubeVideoId | Text | YouTube video ID |
-| channel | Relationship | Source channel |
-| transcript | Text | Extracted transcript |
-| status | Select | pending / fetched / transcribed / article_generated / failed |
+| videoId | Text | YouTube video ID |
+| youtubeUrl | Text | Full YouTube video URL |
+| author | Relationship | Source author |
+| description | Textarea | Video description |
+| thumbnailUrl | Text | Video thumbnail URL |
+| duration | Text | Video duration |
+| transcript | Textarea | Extracted transcript |
+| transcriptLanguage | Text | Transcript language (ar/en) |
+| status | Select | pending / fetched / transcribed / article_generated / failed / no_transcript |
 | errorMessage | Text | Error details if failed |
+| publishedAt | Date | YouTube publish date |
+| viewCount | Number | View count |
 
 ### Articles
 

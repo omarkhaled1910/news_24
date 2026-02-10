@@ -16,6 +16,23 @@ import { Code } from '../../blocks/Code/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { revalidateDelete, revalidateArticle } from './hooks/revalidateArticle'
 import { slugField } from 'payload'
+import type { Slugify } from 'payload/shared'
+
+/**
+ * Custom slugify function that supports Arabic (and other Unicode) characters.
+ * Payload's default slugify strips everything that isn't ASCII \w, which removes Arabic text.
+ */
+const arabicSlugify: Slugify = ({ valueToSlugify }) => {
+  if (!valueToSlugify) return ''
+
+  return valueToSlugify
+    .trim()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '') // Keep all Unicode letters, numbers, spaces, hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Collapse multiple hyphens
+    .replace(/^-|-$/g, '') // Trim leading/trailing hyphens
+    .toLowerCase()
+}
 
 import {
   MetaDescriptionField,
@@ -29,7 +46,7 @@ export const Articles: CollectionConfig = {
   slug: 'articles',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'authorName', 'channel', 'publishedAt', '_status'],
+    defaultColumns: ['title', 'authorName', 'author', 'publishedAt', '_status'],
     group: 'المحتوى',
   },
   defaultPopulate: {
@@ -37,10 +54,10 @@ export const Articles: CollectionConfig = {
     slug: true,
     excerpt: true,
     heroImage: true,
+    author: true,
     authorName: true,
     publishedAt: true,
     categories: true,
-    channel: true,
   },
   access: {
     create: authenticated,
@@ -107,12 +124,6 @@ export const Articles: CollectionConfig = {
               admin: {
                 description: 'الفيديو الذي تم استخلاص المقال منه',
               },
-            },
-            {
-              name: 'channel',
-              label: 'القناة',
-              type: 'relationship',
-              relationTo: 'channels',
             },
             {
               name: 'youtubeUrl',
@@ -196,6 +207,15 @@ export const Articles: CollectionConfig = {
       ],
     },
     {
+      name: 'author',
+      label: 'الكاتب',
+      type: 'relationship',
+      relationTo: 'authors',
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'authorName',
       label: 'اسم الكاتب',
       type: 'text',
@@ -245,7 +265,7 @@ export const Articles: CollectionConfig = {
         position: 'sidebar',
       },
     },
-    slugField(),
+    slugField({ slugify: arabicSlugify }),
   ],
   hooks: {
     afterChange: [revalidateArticle],
