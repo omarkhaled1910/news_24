@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useI18n } from '@/i18n/client'
 import React, { useState } from 'react'
 
 import type { Theme } from './types'
@@ -16,6 +17,7 @@ import { themeLocalStorageKey } from './types'
 
 export const ThemeSelector: React.FC = () => {
   const { setTheme } = useTheme()
+  const { t } = useI18n()
   const [value, setValue] = useState('')
 
   const onThemeChange = (themeToSet: Theme & 'auto') => {
@@ -36,15 +38,15 @@ export const ThemeSelector: React.FC = () => {
   return (
     <Select onValueChange={onThemeChange} value={value}>
       <SelectTrigger
-        aria-label="Select a theme"
+        aria-label={t('theme.selectLabel')}
         className="w-auto bg-transparent gap-2 pl-0 md:pl-3 border-none"
       >
-        <SelectValue placeholder="Theme" />
+        <SelectValue placeholder={t('theme.placeholder')} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="auto">Auto</SelectItem>
-        <SelectItem value="light">Light</SelectItem>
-        <SelectItem value="dark">Dark</SelectItem>
+        <SelectItem value="auto">{t('theme.auto')}</SelectItem>
+        <SelectItem value="light">{t('theme.light')}</SelectItem>
+        <SelectItem value="dark">{t('theme.dark')}</SelectItem>
       </SelectContent>
     </Select>
   )

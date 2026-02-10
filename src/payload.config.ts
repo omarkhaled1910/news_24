@@ -57,6 +57,10 @@ export default buildConfig({
   editor: defaultLexical,
   db: mongooseAdapter({
     url: process.env.DATABASE_URL || '',
+    // Disable MongoDB transactions to prevent timeout errors in long-running
+    // background pipelines (cron news pipeline). This project's hooks only
+    // perform cache revalidation, so transactional atomicity is not required.
+    transactionOptions: false,
   }),
   collections: [
     // Content

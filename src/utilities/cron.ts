@@ -84,23 +84,22 @@ export async function runNewsPipeline(): Promise<{
     console.log(`[Pipeline] Randomly selected author: "${author.name}" (${authors.length} active)`)
 
     try {
-      // Step 2: Fetch latest videos from author's channel
-      const videos = await fetchChannelVideos(author.channelId, 5)
-      console.log(`[Pipeline] Fetched ${videos.length} videos from "${author.name}"`)
+      // Step 2: Gather all known video IDs for this author so we can skip them
+      const { docs: existingVideoDocs } = await payload.find({
+        collection: 'videos',
+        where: { author: { equals: author.id } },
+        limit: 0, // 0 = return all matching docs
+        select: { videoId: true },
+      })
+      const knownVideoIds = new Set(existingVideoDocs.map((v) => v.videoId as string))
+      console.log(`[Pipeline] ${knownVideoIds.size} known videos for "${author.name}"`)
+
+      // Step 3: Fetch next batch of new videos (skips known ones automatically)
+      const videos = await fetchChannelVideos(author.channelId, 5, knownVideoIds)
+      console.log(`[Pipeline] Fetched ${videos.length} new videos from "${author.name}"`)
 
       for (const videoData of videos) {
         try {
-          // Step 3: Check if video already exists
-          const { docs: existingVideos } = await payload.find({
-            collection: 'videos',
-            where: { videoId: { equals: videoData.videoId } },
-            limit: 1,
-          })
-
-          if (existingVideos.length > 0) {
-            console.log(`[Pipeline] Skipping existing video: ${videoData.videoId}`)
-            continue
-          }
 
           // Step 4: Save video record
           // Ensure publishedAt is a valid ISO date — YouTube sometimes returns relative strings
