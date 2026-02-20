@@ -18,6 +18,14 @@ export const getMediaUrl = (url: string | null | undefined, cacheTag?: string | 
     return cacheTag ? `${url}?${cacheTag}` : url
   }
 
+  // Transform Payload API URLs to direct static URLs
+  // /api/media/file/... -> /media/...
+  if (url.startsWith('/api/media/file/')) {
+    // Extract filename from Payload API URL and use direct /media/ path
+    const filename = url.split('/').pop()?.split('?')[0] || ''
+    url = `/media/${filename}`
+  }
+
   // Otherwise prepend client-side URL
   const baseUrl = getClientSideURL()
   return cacheTag ? `${baseUrl}${url}?${cacheTag}` : `${baseUrl}${url}`
