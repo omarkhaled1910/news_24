@@ -79,7 +79,7 @@ export const ArticleCarousel: React.FC<ArticleCarouselProps> = ({
       dir={dir}
     >
       {/* Slides */}
-      <div className="relative aspect-16/8 sm:aspect-video overflow-hidden">
+      <div className="relative aspect-2/1 sm:aspect-21/9 overflow-hidden">
         {articles.map((slide, index) => {
           const slideCats = Array.isArray(slide.categories)
             ? slide.categories
@@ -119,29 +119,29 @@ export const ArticleCarousel: React.FC<ArticleCarouselProps> = ({
 
               {/* Breaking badge */}
               {slide.breakingNews && (
-                <div className="absolute top-4 end-4 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-md animate-pulse z-20">
+                <div className="absolute top-2 end-2 sm:top-4 sm:end-4 bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-md animate-pulse z-20">
                   {t('home.breaking')}
                 </div>
               )}
 
               {/* Category badge */}
               {slideCats.length > 0 && (
-                <div className="absolute top-4 start-4 bg-white/15 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-md z-20">
+                <div className="absolute top-2 start-2 sm:top-4 sm:start-4 bg-white/15 backdrop-blur-sm text-white text-[10px] sm:text-xs font-medium px-2 py-1 sm:px-3 sm:py-1.5 rounded-md z-20">
                   {slideCats[0]}
                 </div>
               )}
 
               {/* Content overlay */}
-              <div className="absolute bottom-0 start-0 end-0 p-6 lg:p-8 z-20">
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight mb-2 line-clamp-2">
+              <div className="absolute bottom-0 start-0 end-0 p-3 sm:p-4 lg:p-5 z-20">
+                <h2 className="text-base sm:text-lg lg:text-xl font-bold text-white leading-tight mb-1 line-clamp-2">
                   {slide.title}
                 </h2>
                 {slide.excerpt && (
-                  <p className="text-white/75 text-sm lg:text-base line-clamp-2 mb-3 max-w-2xl">
+                  <p className="text-white/75 text-xs sm:text-sm line-clamp-1 mb-2 max-w-xl hidden sm:block">
                     {slide.excerpt}
                   </p>
                 )}
-                <div className="flex items-center gap-3 text-white/60 text-sm">
+                <div className="flex items-center gap-2 text-white/60 text-xs">
                   <span className="font-medium text-white/80">{slide.authorName}</span>
                   <span>{t('common.dotSeparator')}</span>
                   <time>{formatDateTime(slide.publishedAt)}</time>
@@ -158,9 +158,9 @@ export const ArticleCarousel: React.FC<ArticleCarouselProps> = ({
           <button
             onClick={(e) => {
               e.preventDefault()
-              isRTL ? next() : prev()
+              prev()
             }}
-            className="absolute start-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
+            className="absolute start-3 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
             aria-label={t('pagination.previous')}
           >
             <svg
@@ -173,6 +173,7 @@ export const ArticleCarousel: React.FC<ArticleCarouselProps> = ({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className={isRTL ? 'rotate-180' : ''}
             >
               <path d="m15 18-6-6 6-6" />
             </svg>
@@ -180,9 +181,9 @@ export const ArticleCarousel: React.FC<ArticleCarouselProps> = ({
           <button
             onClick={(e) => {
               e.preventDefault()
-              isRTL ? prev() : next()
+              next()
             }}
-            className="absolute end-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
+            className="absolute end-3 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/60"
             aria-label={t('pagination.next')}
           >
             <svg
@@ -195,6 +196,7 @@ export const ArticleCarousel: React.FC<ArticleCarouselProps> = ({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              className={isRTL ? 'rotate-180' : ''}
             >
               <path d="m9 18 6-6-6-6" />
             </svg>

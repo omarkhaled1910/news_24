@@ -15,7 +15,8 @@ interface SidebarProps {
   }>
   categories?: Array<{
     id: string
-    title: string
+    categoryEn: string
+    categoryAr: string
     slug?: string | null
   }>
   locale: Locale
@@ -23,6 +24,10 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ articles, categories, locale }) => {
   const t = createTranslator(locale)
+
+  const getCategoryTitle = (cat: { categoryEn: string; categoryAr: string }) => {
+    return locale === 'en' ? cat.categoryEn : cat.categoryAr
+  }
 
   return (
     <aside className="space-y-6">
@@ -58,7 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ articles, categories, locale }
                 href={`/articles?category=${cat.slug}`}
                 className="px-3 py-1.5 bg-muted text-foreground text-xs rounded-full hover:bg-red-600 hover:text-white transition-colors"
               >
-                {cat.title}
+                {getCategoryTitle(cat)}
               </Link>
             ))}
           </div>

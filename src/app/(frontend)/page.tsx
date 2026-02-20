@@ -3,10 +3,10 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { unstable_cache } from 'next/cache'
 import { ArticleCarousel } from '@/components/ArticleCarousel'
-import { ArticleCard } from '@/components/ArticleCard'
+import { LatestArticlesInfinite } from '@/components/LatestArticlesInfinite'
 import { BreakingNewsTicker } from '@/components/BreakingNews'
 import { Sidebar } from '@/components/Sidebar'
-import Link from 'next/link'
+import { CategoryGrid } from '@/components/CategoryGrid'
 import { getServerI18n } from '@/i18n/server'
 
 const getHomepageData = unstable_cache(
@@ -75,6 +75,9 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen">
+      {/* Category Grid - First Component */}
+      {categories.length > 0 && <CategoryGrid categories={categories} locale={locale} />}
+
       {/* Breaking News Ticker */}
       {breaking.length > 0 && <BreakingNewsTicker articles={breaking} />}
 
@@ -91,48 +94,16 @@ export default async function HomePage() {
         <Sidebar articles={sidebarArticles} categories={categories} locale={locale} />
       </section>
 
-      {/* Latest Articles Grid */}
+      {/* Latest Articles Grid - Infinite Scroll */}
       <section className="container mt-10 mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-foreground border-r-4 border-red-600 pr-4">
             {t('home.latestNews')}
           </h2>
-          <Link
-            href="/articles"
-            className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
-          >
-            {t('home.viewAll')}
-          </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {gridArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} locale={locale} />
-          ))}
-        </div>
+        <LatestArticlesInfinite initialArticles={gridArticles} locale={locale} initialCount={8} />
       </section>
-
-      {/* Categories Section */}
-      {categories.length > 0 && (
-        <section className="bg-card border-t border-border py-10">
-          <div className="container">
-            <h2 className="text-2xl font-bold text-foreground border-r-4 border-red-600 pr-4 mb-6">
-              {t('home.categories')}
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/articles?category=${cat.slug}`}
-                  className="px-5 py-2.5 bg-background border border-border rounded-full text-sm font-medium text-foreground hover:bg-red-600 hover:text-white hover:border-red-600 transition-all duration-200"
-                >
-                  {cat.title}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
     </main>
   )
 }

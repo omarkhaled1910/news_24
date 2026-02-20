@@ -69,6 +69,17 @@ export const Authors: CollectionConfig = {
                 description: 'YouTube channel handle (e.g., @channelname)',
               },
             },
+            {
+              name: 'category',
+              label: 'التصنيف',
+              type: 'relationship',
+              relationTo: 'categories',
+              required: true,
+              index: true,
+              admin: {
+                description: 'التصنيف الرئيسي للكاتب (مطلوب)',
+              },
+            },
           ],
         },
         {

@@ -64,7 +64,10 @@ export default buildConfig({
     // Ensure SSL/TLS works with Vercel and MongoDB Atlas
     connectOptions: {
       serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
+      socketTimeoutMS: 120000, // Increased to 2 minutes for long-running operations
+      maxPoolSize: 10, // Maximum pool size
+      minPoolSize: 2, // Minimum pool size
+      maxIdleTimeMS: 30000, // Close idle connections after 30 seconds
       // TLS configuration for serverless environments (Vercel)
       tls: true,
       // Use the MongoDB Node.js driver's default TLS settings

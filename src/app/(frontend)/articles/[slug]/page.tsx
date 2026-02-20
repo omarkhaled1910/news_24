@@ -11,6 +11,7 @@ import { ArticleCard } from '@/components/ArticleCard'
 import { notFound } from 'next/navigation'
 import { getServerI18n } from '@/i18n/server'
 import { formatSubscriberCount } from '@/utilities/authorMetadata'
+import { TranscriptModal } from '@/components/TranscriptModal'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -207,6 +208,17 @@ export default async function ArticlePage({ params: paramsPromise }: Args) {
                     {t('article.watchSourceVideo')}
                   </a>
                 </p>
+              </div>
+            )}
+
+            {/* Transcript Button */}
+            {article.transcript && (
+              <div className="mt-4">
+                <TranscriptModal
+                  transcript={article.transcript as string}
+                  locale={locale}
+                  dir={dir as 'rtl' | 'ltr'}
+                />
               </div>
             )}
           </div>

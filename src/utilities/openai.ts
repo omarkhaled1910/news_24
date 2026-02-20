@@ -11,6 +11,73 @@ const MAX_RETRIES = 3
 const RETRY_BASE_DELAY_MS = 1_000
 
 // ---------------------------------------------------------------------------
+// Prompts
+// ---------------------------------------------------------------------------
+const ARABIC_PROMPT = `أنت صحفي محترف تعمل في وكالة أنباء عربية مرموقة. مهمتك تحويل نصوص الفيديوهات الإخبارية إلى مقالات إخبارية احترافية.
+
+القواعد الصارمة:
+1. اكتب بأسلوب إخباري محايد وموضوعي
+2. لا تختلق أي معلومات - استخدم فقط ما ورد في النص
+3. حافظ على جميع الأسماء والأرقام والاقتباسات بدقة
+4. اكتب بالعربية الفصحى الحديثة
+5. قسّم المقال إلى فقرات واضحة
+6. ابدأ بمقدمة إخبارية قوية تلخص الخبر (من، ماذا، أين، متى)
+7. أضف عناوين فرعية للفقرات الرئيسية
+8. اختم بخلاصة أو سياق إضافي
+9. أشر إلى المصدر
+
+قواعد الوسوم (Tags):
+- أضف من 20 إلى 25 وسماً دقيقاً وذا صلة بالمقال
+- يجب أن تشمل الوسوم: الأشخاص المذكورين، الأماكن والمدن، المواضيع الرئيسية، الكلمات المفتاحية للأرشفة، وسوم تصنيفية واسعة
+- استخدم وسوماً محددة ودقيقة وليست عامة جداً
+- يمكنك إضافة وسوم بالإنجليزية للمصطلحات العالمية
+
+أعد الإجابة بصيغة JSON بالتنسيق التالي:
+{
+  "title": "عنوان المقال الإخباري",
+  "excerpt": "ملخص قصير للمقال في جملتين أو ثلاث",
+  "paragraphs": [
+    {"type": "paragraph", "text": "نص الفقرة"},
+    {"type": "heading", "text": "عنوان فرعي"},
+    {"type": "paragraph", "text": "نص الفقرة"}
+  ],
+  "tags": ["وسم1", "وسم2", "وسم3", ...]
+}
+ملاحظة: يجب أن يحتوي مصفوفة tags على 20-25 وسماً دقيقاً.`
+
+const ENGLISH_PROMPT = `You are a professional journalist working for a prestigious English news agency. Your task is to convert video transcripts into professional news articles.
+
+Strict rules:
+1. Write in a neutral, objective news style
+2. Do not fabricate any information - use only what is stated in the text
+3. Preserve all names, numbers, and quotes accurately
+4. Write in modern Standard English
+5. Divide the article into clear paragraphs
+6. Begin with a strong news lead that summarizes the story (who, what, where, when)
+7. Add subheadings for main sections
+8. Conclude with a summary or additional context
+9. Cite the source
+
+Tag rules:
+- Add 20-25 accurate and relevant tags to the article
+- Tags should include: people mentioned, places and cities, main topics, keywords for archiving, and broad category tags
+- Use specific and precise tags, not overly generic ones
+- For international topics, include tags in the original language when relevant
+
+Respond in JSON format with the following structure:
+{
+  "title": "Article title",
+  "excerpt": "Short summary in two or three sentences",
+  "paragraphs": [
+    {"type": "paragraph", "text": "Paragraph text"},
+    {"type": "heading", "text": "Subheading"},
+    {"type": "paragraph", "text": "Paragraph text"}
+  ],
+  "tags": ["tag1", "tag2", "tag3", ...]
+}
+Note: The tags array must contain 20-25 accurate tags.`
+
+// ---------------------------------------------------------------------------
 // OpenAI client (lazy)
 // ---------------------------------------------------------------------------
 const getOpenAIClient = () => {
@@ -82,13 +149,15 @@ export interface LexicalEditorState {
 // ---------------------------------------------------------------------------
 
 /**
- * Generate a professional Arabic news article from a video transcript.
+ * Generate a professional news article from a video transcript.
+ * Supports Arabic (ar) and English (en) languages.
  */
 export async function generateArticleFromTranscript(
   transcript: string,
   videoTitle: string,
   channelName: string,
   youtubeUrl: string,
+  language: string = 'ar',
 ): Promise<GeneratedArticle> {
   // Input validation
   if (!transcript?.trim()) throw new Error('[OpenAI] Transcript is empty')
@@ -103,32 +172,17 @@ export async function generateArticleFromTranscript(
     )
   }
 
-  const systemPrompt = `أنت صحفي محترف تعمل في وكالة أنباء عربية مرموقة. مهمتك تحويل نصوص الفيديوهات الإخبارية إلى مقالات إخبارية احترافية.
+  const systemPrompt = language === 'en' ? ENGLISH_PROMPT : ARABIC_PROMPT
 
-القواعد الصارمة:
-1. اكتب بأسلوب إخباري محايد وموضوعي
-2. لا تختلق أي معلومات - استخدم فقط ما ورد في النص
-3. حافظ على جميع الأسماء والأرقام والاقتباسات بدقة
-4. اكتب بالعربية الفصحى الحديثة
-5. قسّم المقال إلى فقرات واضحة
-6. ابدأ بمقدمة إخبارية قوية تلخص الخبر (من، ماذا، أين، متى)
-7. أضف عناوين فرعية للفقرات الرئيسية
-8. اختم بخلاصة أو سياق إضافي
-9. أشر إلى المصدر
+  const userPrompt =
+    language === 'en'
+      ? `Convert the following transcript from video titled "${videoTitle}" from channel "${channelName}" into a professional news article.
 
-أعد الإجابة بصيغة JSON بالتنسيق التالي:
-{
-  "title": "عنوان المقال الإخباري",
-  "excerpt": "ملخص قصير للمقال في جملتين أو ثلاث",
-  "paragraphs": [
-    {"type": "paragraph", "text": "نص الفقرة"},
-    {"type": "heading", "text": "عنوان فرعي"},
-    {"type": "paragraph", "text": "نص الفقرة"}
-  ],
-  "tags": ["وسم1", "وسم2", "وسم3"]
-}`
+Source link: ${youtubeUrl}
 
-  const userPrompt = `حوّل النص التالي من فيديو بعنوان "${videoTitle}" من قناة "${channelName}" إلى مقال إخباري احترافي.
+Transcript:
+${transcript.substring(0, MAX_TRANSCRIPT_CHARS)}`
+      : `حوّل النص التالي من فيديو بعنوان "${videoTitle}" من قناة "${channelName}" إلى مقال إخباري احترافي.
 
 رابط المصدر: ${youtubeUrl}
 
@@ -209,8 +263,10 @@ function headingTag(level: number): string {
 
 /**
  * Convert structured text content into Payload's Lexical editor format.
+ * @param content - The structured text content (with markdown-style headings)
+ * @param direction - Text direction: 'rtl' for Arabic, 'ltr' for English
  */
-export function convertToLexicalJSON(content: string): LexicalEditorState {
+export function convertToLexicalJSON(content: string, direction: 'rtl' | 'ltr' = 'rtl'): LexicalEditorState {
   const lines = content.split('\n\n').filter((line) => line.trim())
 
   const children: LexicalBlockNode[] = []
@@ -237,7 +293,7 @@ export function convertToLexicalJSON(content: string): LexicalEditorState {
             version: 1,
           },
         ],
-        direction: 'rtl',
+        direction,
         format: '',
         indent: 0,
         version: 1,
@@ -256,7 +312,7 @@ export function convertToLexicalJSON(content: string): LexicalEditorState {
             version: 1,
           },
         ],
-        direction: 'rtl',
+        direction,
         format: '',
         indent: 0,
         version: 1,
@@ -270,7 +326,7 @@ export function convertToLexicalJSON(content: string): LexicalEditorState {
     root: {
       type: 'root',
       children,
-      direction: 'rtl',
+      direction,
       format: '',
       indent: 0,
       version: 1,

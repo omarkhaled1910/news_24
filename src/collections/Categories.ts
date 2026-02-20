@@ -13,13 +13,27 @@ export const Categories: CollectionConfig = {
     update: authenticated,
   },
   admin: {
-    useAsTitle: 'title',
+    useAsTitle: 'categoryId',
   },
   fields: [
     {
-      name: 'title',
+      name: 'categoryId',
       type: 'text',
       required: true,
+      label: 'Category ID',
+      unique: true,
+    },
+    {
+      name: 'categoryEn',
+      type: 'text',
+      required: true,
+      label: 'Category (English)',
+    },
+    {
+      name: 'categoryAr',
+      type: 'text',
+      required: true,
+      label: 'التصنيف (عربي)',
     },
     slugField({
       position: undefined,

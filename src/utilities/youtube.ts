@@ -63,7 +63,27 @@ export async function fetchChannelVideos(
         const thumbnailUrl =
           ('thumbnails' in video && video.thumbnails?.[0]?.url) ||
           `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`
-        const duration = ('duration' in video && video.duration?.toString()) || ''
+
+        // Handle duration - it might be an object with seconds property or a string
+        let duration = ''
+        if ('duration' in video && video.duration) {
+          if (typeof video.duration === 'string') {
+            duration = video.duration
+          } else if (typeof video.duration === 'object' && video.duration !== null) {
+            // youtubei.js returns duration as an object with seconds property
+            const seconds = (video.duration as any).seconds
+            if (typeof seconds === 'number') {
+              const minutes = Math.floor(seconds / 60)
+              const secs = seconds % 60
+              duration = `${minutes}:${secs.toString().padStart(2, '0')}`
+            } else {
+              duration = String(video.duration)
+            }
+          } else {
+            duration = String(video.duration)
+          }
+        }
+
         const viewCount =
           ('view_count' in video && typeof video.view_count === 'number' && video.view_count) || 0
 
@@ -115,6 +135,25 @@ export async function fetchVideoDetails(videoId: string): Promise<YouTubeVideoDa
 
     const { basic_info } = info
 
+    // Handle duration - might be an object with seconds or a string
+    let duration = ''
+    if (basic_info.duration) {
+      if (typeof basic_info.duration === 'string') {
+        duration = basic_info.duration
+      } else if (typeof basic_info.duration === 'object' && basic_info.duration !== null) {
+        const seconds = (basic_info.duration as any).seconds
+        if (typeof seconds === 'number') {
+          const minutes = Math.floor(seconds / 60)
+          const secs = seconds % 60
+          duration = `${minutes}:${secs.toString().padStart(2, '0')}`
+        } else {
+          duration = String(basic_info.duration)
+        }
+      } else {
+        duration = String(basic_info.duration)
+      }
+    }
+
     return {
       videoId,
       title: basic_info.title || '',
@@ -123,7 +162,7 @@ export async function fetchVideoDetails(videoId: string): Promise<YouTubeVideoDa
         basic_info.thumbnail?.[0]?.url || `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`,
       youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
       publishedAt: new Date().toISOString(),
-      duration: basic_info.duration?.toString() || '',
+      duration,
       viewCount: basic_info.view_count || 0,
     }
   } catch (error) {

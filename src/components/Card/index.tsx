@@ -48,9 +48,9 @@ export const Card: React.FC<{
               <div>
                 {categories?.map((category, index) => {
                   if (typeof category === 'object') {
-                    const { title: titleFromCategory } = category
+                    const { categoryEn, categoryAr } = category as { categoryEn?: string; categoryAr?: string }
 
-                    const categoryTitle = titleFromCategory || 'Untitled category'
+                    const categoryTitle = categoryEn || categoryAr || 'Untitled category'
 
                     const isLast = index === categories.length - 1
 

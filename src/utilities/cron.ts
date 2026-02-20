@@ -9,6 +9,14 @@ import { downloadAndUploadThumbnail } from './thumbnailDownloader'
 let cronJob: ScheduledTask | null = null
 
 /**
+ * Get a fresh payload instance to avoid connection timeout issues
+ * This is important for long-running cron jobs
+ */
+async function getFreshPayload() {
+  return await getPayload({ config })
+}
+
+/**
  * Start the automated news cron job.
  * Runs every 5 minutes, picking a random active author each time.
  */
@@ -62,17 +70,18 @@ export async function runNewsPipeline(): Promise<{
   articles: number
   errors: number
 }> {
-  const payload = await getPayload({ config })
   let processed = 0
   let articles = 0
   let errors = 0
 
   try {
     // Step 1: Get all active authors and pick one at random
+    const payload = await getFreshPayload()
     const { docs: authors } = await payload.find({
       collection: 'authors',
       where: { active: { equals: true } },
       limit: 100,
+      depth: 1, // Populate category relationship
     })
 
     if (authors.length === 0) {
@@ -85,7 +94,8 @@ export async function runNewsPipeline(): Promise<{
 
     try {
       // Step 2: Gather all known video IDs for this author so we can skip them
-      const { docs: existingVideoDocs } = await payload.find({
+      const payload2 = await getFreshPayload()
+      const { docs: existingVideoDocs } = await payload2.find({
         collection: 'videos',
         where: { author: { equals: author.id } },
         limit: 0, // 0 = return all matching docs
@@ -100,6 +110,7 @@ export async function runNewsPipeline(): Promise<{
 
       for (const videoData of videos) {
         try {
+          const payload3 = await getFreshPayload()
 
           // Step 4: Save video record
           // Ensure publishedAt is a valid ISO date — YouTube sometimes returns relative strings
@@ -109,7 +120,7 @@ export async function runNewsPipeline(): Promise<{
             return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString()
           })()
 
-          const video = await payload.create({
+          const video = await payload3.create({
             collection: 'videos',
             data: {
               title: videoData.title,
@@ -132,7 +143,8 @@ export async function runNewsPipeline(): Promise<{
           const transcript = await extractTranscript(videoData.videoId, language)
 
           if (!transcript) {
-            await payload.update({
+            const payload4 = await getFreshPayload()
+            await payload4.update({
               collection: 'videos',
               id: video.id,
               data: { status: 'no_transcript' },
@@ -141,11 +153,15 @@ export async function runNewsPipeline(): Promise<{
             continue
           }
 
-          await payload.update({
+          const payload5 = await getFreshPayload()
+          // Truncate transcript for Video record (full version is in Article)
+          const truncatedTranscript =
+            transcript.slice(0, 5000) + (transcript.length > 5000 ? '...' : '')
+          await payload5.update({
             collection: 'videos',
             id: video.id,
             data: {
-              transcript,
+              transcript: truncatedTranscript,
               transcriptLanguage: language,
               status: 'transcribed',
             },
@@ -162,22 +178,30 @@ export async function runNewsPipeline(): Promise<{
             videoData.title,
             author.name,
             videoData.youtubeUrl,
+            author.language || 'ar',
           )
 
           // Step 7: Download and upload thumbnail as hero image
           let heroImageId: string | null = null
           if (videoData.thumbnailUrl) {
+            const payload6 = await getFreshPayload()
             heroImageId = await downloadAndUploadThumbnail(
               videoData.thumbnailUrl,
               videoData.title,
-              payload,
+              payload6,
             )
           }
 
           // Step 8: Convert content to Lexical JSON format
-          const lexicalContent = convertToLexicalJSON(generatedArticle.content)
+          const lexicalContent = convertToLexicalJSON(
+            generatedArticle.content,
+            author.language === 'en' ? 'ltr' : 'rtl',
+          )
 
           // Step 9: Create article
+          // Truncate transcript for Article (textarea has limits, but keep more than Video preview)
+          const articleTranscript =
+            transcript.slice(0, 15000) + (transcript.length > 15000 ? '...' : '')
           const articleData: Record<string, unknown> = {
             title: generatedArticle.title,
             excerpt: generatedArticle.excerpt,
@@ -191,6 +215,8 @@ export async function runNewsPipeline(): Promise<{
             featured: false,
             breakingNews: false,
             tags: generatedArticle.tags.map((tag) => ({ tag })),
+            transcript: articleTranscript,
+            transcriptLanguage: language,
             _status: 'published',
           }
 
@@ -198,14 +224,21 @@ export async function runNewsPipeline(): Promise<{
             articleData.heroImage = heroImageId
           }
 
-          await payload.create({
+          // Assign author's category to article
+          if (author.category) {
+            articleData.categories = [author.category]
+          }
+
+          const payload7 = await getFreshPayload()
+          await payload7.create({
             collection: 'articles',
             data: articleData as any,
             draft: false,
           })
 
           // Update video status
-          await payload.update({
+          const payload8 = await getFreshPayload()
+          await payload8.update({
             collection: 'videos',
             id: video.id,
             data: { status: 'article_generated' },
@@ -223,7 +256,8 @@ export async function runNewsPipeline(): Promise<{
       }
 
       // Update author's last fetched timestamp
-      await payload.update({
+      const payload9 = await getFreshPayload()
+      await payload9.update({
         collection: 'authors',
         id: author.id,
         data: {

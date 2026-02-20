@@ -54,7 +54,9 @@ export const Articles: CollectionConfig = {
     slug: true,
     excerpt: true,
     heroImage: true,
-    author: true,
+    author: {
+      category: true,
+    },
     authorName: true,
     publishedAt: true,
     categories: true,
@@ -138,6 +140,22 @@ export const Articles: CollectionConfig = {
               label: 'مقال مولد تلقائياً',
               type: 'checkbox',
               defaultValue: false,
+              admin: {
+                readOnly: true,
+              },
+            },
+            {
+              name: 'transcript',
+              label: 'النص الكامل',
+              type: 'textarea',
+              admin: {
+                description: 'النص الكامل للفيديو المصدر',
+              },
+            },
+            {
+              name: 'transcriptLanguage',
+              label: 'لغة النص',
+              type: 'text',
               admin: {
                 readOnly: true,
               },

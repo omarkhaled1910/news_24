@@ -2,6 +2,8 @@ import React from 'react'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { ArticleCard } from '@/components/ArticleCard'
+import { CategoryFilter } from '@/components/CategoryFilter'
+import { Pagination } from '@/components/Pagination'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getServerI18n } from '@/i18n/server'
@@ -14,26 +16,30 @@ type Args = {
 }
 
 export default async function ArticlesPage({ searchParams: searchParamsPromise }: Args) {
-  const { locale, t } = await getServerI18n()
+  const { locale, dir, t } = await getServerI18n()
   const searchParams = await searchParamsPromise
   const currentPage = Number(searchParams.page) || 1
-  const category = searchParams.category
+  const categorySlug = searchParams.category
 
   const payload = await getPayload({ config: configPromise })
 
+  // Fetch the current category if provided
+  let currentCategory = null
   const where: Record<string, any> = {
     _status: { equals: 'published' },
   }
 
-  if (category) {
+  if (categorySlug) {
     // Find category by slug
     const catResult = await payload.find({
       collection: 'categories',
-      where: { slug: { equals: category } },
+      where: { slug: { equals: categorySlug } },
       limit: 1,
+      depth: 1,
     })
     if (catResult.docs.length > 0) {
-      where['categories'] = { in: [catResult.docs[0].id] }
+      currentCategory = catResult.docs[0]
+      where['categories'] = { in: [currentCategory.id] }
     }
   }
 
@@ -46,78 +52,79 @@ export default async function ArticlesPage({ searchParams: searchParamsPromise }
     depth: 2,
   })
 
+  // Fetch all categories for the filter
+  const categoriesResult = await payload.find({
+    collection: 'categories',
+    limit: 20,
+  })
+
   const { docs: articles, totalPages, hasPrevPage, hasNextPage } = result
 
+  // Get localized category name
+  const categoryName = currentCategory
+    ? (locale === 'ar'
+        ? (currentCategory as any).categoryAr
+        : (currentCategory as any).categoryEn)
+    : null
+
   return (
-    <main className="min-h-screen pb-16">
+    <main className="min-h-screen pb-16" dir={dir}>
       <div className="container mt-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
+        <div className="flex items-center justify-between mb-8 gap-4">
+          <div className="min-w-0">
             <h1 className="text-3xl font-bold text-foreground">
-              {category ? t('articles.byCategory', { category }) : t('articles.all')}
+              {categoryName || t('articles.all')}
             </h1>
             <p className="text-muted-foreground mt-1">
               {t('articles.count', { count: result.totalDocs })}
             </p>
           </div>
-          <Link href="/" className="text-red-600 hover:text-red-700 text-sm font-medium">
+          <Link href="/" className="text-red-600 hover:text-red-700 text-sm font-medium shrink-0">
             {t('article.backToHomeWithArrow')}
           </Link>
         </div>
 
-        {/* Articles grid */}
-        {articles.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {articles.map((article) => (
-              <ArticleCard key={article.id} article={article as any} locale={locale} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <p className="text-xl text-muted-foreground">{t('articles.empty')}</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              {t('articles.emptyHint')}
-            </p>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <nav className="flex justify-center gap-2 mt-10">
-            {hasPrevPage && (
-              <Link
-                href={`/articles?page=${currentPage - 1}${category ? `&category=${category}` : ''}`}
-                className="px-4 py-2 bg-card border border-border rounded-lg text-sm hover:bg-muted transition-colors"
-              >
-                {t('pagination.previous')}
-              </Link>
+        {/* Two-column layout */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main content - articles grid */}
+          <div className="flex-1 min-w-0">
+            {articles.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {articles.map((article) => (
+                  <ArticleCard key={article.id} article={article as any} locale={locale} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <p className="text-xl text-muted-foreground">{t('articles.empty')}</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {t('articles.emptyHint')}
+                </p>
+              </div>
             )}
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Link
-                key={page}
-                href={`/articles?page=${page}${category ? `&category=${category}` : ''}`}
-                className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                  page === currentPage
-                    ? 'bg-red-600 text-white'
-                    : 'bg-card border border-border hover:bg-muted'
-                }`}
-              >
-                {page}
-              </Link>
-            ))}
-
-            {hasNextPage && (
-              <Link
-                href={`/articles?page=${currentPage + 1}${category ? `&category=${category}` : ''}`}
-                className="px-4 py-2 bg-card border border-border rounded-lg text-sm hover:bg-muted transition-colors"
-              >
-                {t('pagination.next')}
-              </Link>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                baseUrl="/articles"
+                searchParams={categorySlug ? { category: categorySlug } : undefined}
+                locale={locale}
+              />
             )}
-          </nav>
-        )}
+          </div>
+
+          {/* Sidebar - Category Filter */}
+          <aside className="w-full lg:w-72 shrink-0">
+            <CategoryFilter
+              categories={categoriesResult.docs}
+              currentCategory={categorySlug}
+              locale={locale}
+            />
+          </aside>
+        </div>
       </div>
     </main>
   )

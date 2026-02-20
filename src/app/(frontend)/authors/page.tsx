@@ -6,6 +6,7 @@ import React, { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import { AuthorCard } from '@/components/AuthorCard'
+import { Pagination } from '@/components/Pagination'
 import { getServerI18n } from '@/i18n/server'
 
 const queryAuthors = cache(async (page: number = 1) => {
@@ -14,18 +15,9 @@ const queryAuthors = cache(async (page: number = 1) => {
   const authors = await payload.find({
     collection: 'authors',
     where: {
-      and: [
-        {
-          active: {
-            equals: true,
-          },
-        },
-        {
-          _status: {
-            equals: 'published',
-          },
-        },
-      ],
+      active: {
+        equals: true,
+      },
     },
     limit: 12,
     page,
@@ -108,68 +100,12 @@ export default async function AuthorsPage({
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-12">
-                {page > 1 && (
-                  <Link
-                    href={`/authors?page=${page - 1}`}
-                    className="px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted transition-colors"
-                  >
-                    {locale === 'ar' ? 'السابق' : 'Previous'}
-                  </Link>
-                )}
-
-                <div className="flex gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(
-                      (p) =>
-                        p === 1 ||
-                        p === totalPages ||
-                        (p >= page - 1 && p <= page + 1),
-                    )
-                    .map((p, i, arr) => {
-                      const prev = arr[i - 1]
-                      if (prev && p - prev > 1) {
-                        return (
-                          <React.Fragment key={`ellipsis-${p}`}>
-                            <span className="px-2 py-2 text-muted-foreground">...</span>
-                            <Link
-                              href={`/authors?page=${p}`}
-                              className={`px-4 py-2 rounded-lg transition-colors ${
-                                p === page
-                                  ? 'bg-red-600 text-background font-semibold'
-                                  : 'bg-card border border-border hover:bg-muted'
-                              }`}
-                            >
-                              {p}
-                            </Link>
-                          </React.Fragment>
-                        )
-                      }
-                      return (
-                        <Link
-                          key={p}
-                          href={`/authors?page=${p}`}
-                          className={`px-4 py-2 rounded-lg transition-colors ${
-                            p === page
-                              ? 'bg-red-600 text-background font-semibold'
-                              : 'bg-card border border-border hover:bg-muted'
-                          }`}
-                        >
-                          {p}
-                        </Link>
-                      )
-                    })}
-                </div>
-
-                {page < totalPages && (
-                  <Link
-                    href={`/authors?page=${page + 1}`}
-                    className="px-4 py-2 bg-card border border-border rounded-lg hover:bg-muted transition-colors"
-                  >
-                    {locale === 'ar' ? 'التالي' : 'Next'}
-                  </Link>
-                )}
-              </div>
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                baseUrl="/authors"
+                locale={locale}
+              />
             )}
           </>
         ) : (
