@@ -3,6 +3,8 @@
 # which is required for Payload CMS initialization during `next build`
 
 [build]
+buildArgs = ["PAYLOAD_SECRET", "DATABASE_URL"]
+
 [build.env]
 # Required: Payload CMS needs this to initialize during build
 PAYLOAD_SECRET = "${PAYLOAD_SECRET}"
