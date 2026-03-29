@@ -31,6 +31,15 @@ const nextConfig = {
         hostname: 'yt3.ggpht.com',
         protocol: 'https',
       },
+      // Supabase Storage CDN - allow all paths from Supabase domain
+      ...(process.env.NEXT_PUBLIC_SUPABASE_URL
+        ? [
+            {
+              hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname,
+              protocol: 'https',
+            },
+          ]
+        : []),
     ],
   },
   webpack: (webpackConfig) => {
@@ -44,9 +53,6 @@ const nextConfig = {
   },
   reactStrictMode: true,
   redirects,
-  experimental: {
-    instrumentationHook: true,
-  },
 }
 
 export default withPayload(nextConfig, { devBundleServerPackages: false })

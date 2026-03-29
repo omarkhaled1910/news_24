@@ -1,4 +1,6 @@
-import React from 'react'
+'use client'
+
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export type TileSize = 'large' | 'medium' | 'small'
@@ -19,12 +21,27 @@ export interface CategoryTileProps {
   index: number
 }
 
-const colorVariants: Record<ColorVariant, { from: string; to: string; solid: string }> = {
+// Light mode colors - darker for better white text contrast
+const lightColorVariants: Record<ColorVariant, { from: string; to: string; solid: string }> = {
+  0: { from: '#991b1b', to: '#7f1d1d', solid: '#7f1d1d' },
+  1: { from: '#b91c1c', to: '#991b1b', solid: '#991b1b' },
+  2: { from: '#dc2626', to: '#b91c1c', solid: '#b91c1c' },
+  3: { from: '#7f1d1d', to: '#450a0a', solid: '#450a0a' },
+  4: { from: '#b91c1c', to: '#991b1b', solid: '#dc2626' },
+}
+
+// Dark mode colors - lighter, more vibrant
+const darkColorVariants: Record<ColorVariant, { from: string; to: string; solid: string }> = {
   0: { from: '#dc2626', to: '#991b1b', solid: '#b91c1c' },
   1: { from: '#ef4444', to: '#b91c1c', solid: '#dc2626' },
   2: { from: '#f87171', to: '#dc2626', solid: '#ef4444' },
   3: { from: '#7f1d1d', to: '#450a0a', solid: '#7f1d1d' },
   4: { from: '#fca5a5', to: '#ef4444', solid: '#f87171' },
+}
+
+const colorVariants = {
+  light: lightColorVariants,
+  dark: darkColorVariants,
 }
 
 const patternStyles: Record<PatternType, string> = {
@@ -59,7 +76,31 @@ export const CategoryTile: React.FC<CategoryTileProps> = ({
   locale,
   index,
 }) => {
-  const colors = colorVariants[variant]
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light')
+
+  useEffect(() => {
+    // Get initial theme from document
+    const getTheme = (): 'light' | 'dark' => {
+      const theme = document.documentElement.getAttribute('data-theme')
+      return theme === 'dark' ? 'dark' : 'light'
+    }
+
+    setThemeMode(getTheme())
+
+    // Watch for theme changes using MutationObserver
+    const observer = new MutationObserver(() => {
+      setThemeMode(getTheme())
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const colors = colorVariants[themeMode][variant]
   const categoryName = locale === 'en' ? category.categoryEn : category.categoryAr
   const initialLetter = getInitialLetter(categoryName)
   const isRtl = locale === 'ar'

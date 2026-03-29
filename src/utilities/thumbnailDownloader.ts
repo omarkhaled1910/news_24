@@ -1,14 +1,29 @@
 import type { Payload } from 'payload'
 import type { PayloadRequest } from 'payload'
-import path from 'path'
-import fs from 'fs'
-import { fileURLToPath } from 'url'
+import { createClient } from '@supabase/supabase-js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const bucketName = process.env.SUPABASE_STORAGE_BUCKET_NAME || 'media'
+
+// Initialize Supabase client if credentials are available
+const supabase =
+  supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project')
+    ? createClient(supabaseUrl, supabaseKey)
+    : null
+
+/**
+ * Generate a UUID v4 (Node.js 20+ has crypto.randomUUID built-in)
+ */
+function generateUUID(): string {
+  return crypto.randomUUID()
+}
 
 /**
  * Download a YouTube thumbnail and upload it to Payload's media collection
+ *
+ * If Supabase is configured, uploads to Supabase Storage with a UUID filename.
+ * Otherwise, falls back to local file storage.
  */
 export async function downloadAndUploadThumbnail(
   thumbnailUrl: string,
@@ -30,7 +45,46 @@ export async function downloadAndUploadThumbnail(
     const contentType = response.headers.get('content-type') || 'image/jpeg'
     const ext = contentType.includes('png') ? '.png' : '.jpg'
 
-    // Create a safe filename
+    // If Supabase is configured, upload directly to Supabase Storage
+    if (supabase) {
+      const uuid = generateUUID()
+      const filename = `${uuid}${ext}`
+      const supabaseUrlPath = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filename}`
+
+      const { error } = await supabase.storage.from(bucketName).upload(filename, buffer, {
+        contentType,
+        upsert: true,
+      })
+
+      if (error) {
+        console.error('Failed to upload to Supabase:', error.message)
+        return null
+      }
+
+      // Create Media record with Supabase URL
+      const media = await payload.create({
+        collection: 'media',
+        data: {
+          alt: videoTitle,
+          url: supabaseUrlPath,
+          filename: filename,
+        },
+        ...(req ? { req } : {}),
+      })
+
+      console.log(`[Thumbnail] Uploaded to Supabase: ${filename}`)
+      return media.id as string
+    }
+
+    // Fallback: Local file storage (when Supabase is not configured)
+    const path = await import('path')
+    const fs = await import('fs')
+    const { fileURLToPath } = await import('url')
+
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+
+    // Create a safe filename (keeping legacy behavior for local storage)
     const safeTitle = videoTitle
       .replace(/[^\u0600-\u06FFa-zA-Z0-9\s]/g, '')
       .replace(/\s+/g, '-')

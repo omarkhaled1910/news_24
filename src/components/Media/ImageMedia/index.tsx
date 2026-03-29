@@ -44,7 +44,9 @@ const placeholderBlur =
  * TL;DR: Template uses relative URLs + getMediaUrl() to construct full URLs, then relies on
  * remotePatterns for optimization. Only add `loader` if using external CDNs with custom transforms.
  */
-
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const bucketName = process.env.SUPABASE_STORAGE_BUCKET_NAME || 'news_24'
+export const SUPABASE_DETECTOR_STRING = 'supabase.co'
 export const ImageMedia: React.FC<MediaProps> = (props) => {
   const {
     alt: altFromProps,
@@ -62,7 +64,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
   let height: number | undefined
   let alt = altFromProps
   let src: StaticImageData | string = srcFromProps || ''
-
+  const isSupabaseImage = typeof src === 'string' && src.includes(SUPABASE_DETECTOR_STRING)
   if (!src && resource && typeof resource === 'object') {
     const { alt: altFromResource, height: fullHeight, url, width: fullWidth } = resource
 
@@ -72,7 +74,12 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
 
     const cacheTag = resource.updatedAt
 
-    src = getMediaUrl(url, cacheTag)
+    // src = getMediaUrl(url, cacheTag, isSupabaseImage)
+    const filename = url?.split('/').pop()?.split('?')[0] || ''
+    const supabaseCdnUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filename}`
+    src = supabaseCdnUrl
+    // Don't add cache tag to Supabase URLs
+    // return supabaseCdnUrl
   }
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
@@ -84,6 +91,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         .map(([, value]) => `(max-width: ${value}px) ${value * 2}w`)
         .join(', ')
 
+  // Check if the image source is from Supabase - if so, use unoptimized to avoid upstream errors
   return (
     <picture className={cn(pictureClassName)}>
       <NextImage
@@ -99,6 +107,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         sizes={sizes}
         src={src}
         width={!fill ? width : undefined}
+        unoptimized={isSupabaseImage}
       />
     </picture>
   )

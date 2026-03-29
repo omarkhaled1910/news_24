@@ -1,0 +1,23 @@
+# Railway configuration for Docker builds
+# This makes environment variables available during the Docker build phase
+# which is required for Payload CMS initialization during `next build`
+
+[build]
+[build.env]
+# Required: Payload CMS needs this to initialize during build
+PAYLOAD_SECRET = "${PAYLOAD_SECRET}"
+
+# Optional but recommended: Database connection for static generation
+DATABASE_URL = "${DATABASE_URL}"
+
+# Optional: Supabase storage URL (if using Supabase for media)
+NEXT_PUBLIC_SUPABASE_URL = "${NEXT_PUBLIC_SUPABASE_URL}"
+
+# Optional: Server URL (defaults to localhost if not set)
+NEXT_PUBLIC_SERVER_URL = "${NEXT_PUBLIC_SERVER_URL:-http://localhost:3000}"
+
+# Optional: Cron job authentication
+CRON_SECRET = "${CRON_SECRET}"
+
+# Optional: Preview authentication
+PREVIEW_SECRET = "${PREVIEW_SECRET}"

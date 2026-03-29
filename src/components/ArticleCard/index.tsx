@@ -34,7 +34,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         .filter((c: any): c is { title: string; slug?: string | null } => typeof c === 'object')
         .map((c: { title: string }) => c.title)
     : []
-
+  console.log(heroImage)
   if (variant === 'compact') {
     return (
       <Link href={`/articles/${slug}`} className="group block">
