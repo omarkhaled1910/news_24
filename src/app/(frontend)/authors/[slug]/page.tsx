@@ -12,6 +12,8 @@ import { AuthorCard } from '@/components/AuthorCard'
 import { formatSubscriberCount, formatViewCount } from '@/utilities/authorMetadata'
 import { getServerI18n } from '@/i18n/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateStaticParams() {
   try {
     // const payload = await getPayload({ config: configPromise })

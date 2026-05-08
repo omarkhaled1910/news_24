@@ -13,6 +13,8 @@ import { getServerI18n } from '@/i18n/server'
 import { formatSubscriberCount } from '@/utilities/authorMetadata'
 import { TranscriptModal } from '@/components/TranscriptModal'
 
+export const dynamic = 'force-dynamic'
+
 export async function generateStaticParams() {
   try {
     // const payload = await getPayload({ config: configPromise })
