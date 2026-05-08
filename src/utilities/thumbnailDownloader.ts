@@ -3,12 +3,16 @@ import type { PayloadRequest } from 'payload'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PRIVATE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
-const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || process.env.SUPABASE_STORAGE_BUCKET_NAME || 'media'
+const supabaseKey =
+  process.env.NEXT_PRIVATE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+const bucketName =
+  process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME ||
+  process.env.SUPABASE_STORAGE_BUCKET_NAME ||
+  'media'
 
 // Initialize Supabase client if credentials are available
 const supabase =
-  supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project')
+  supabaseUrl && supabaseKey && !supabaseUrl.includes('supabase')
     ? createClient(supabaseUrl, supabaseKey)
     : null
 
