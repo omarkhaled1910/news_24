@@ -12,7 +12,7 @@ const bucketName =
 
 // Initialize Supabase client if credentials are available
 const supabase =
-  supabaseUrl && supabaseKey && !supabaseUrl.includes('supabase')
+  supabaseUrl && supabaseKey && !supabaseUrl.includes('your-project')
     ? createClient(supabaseUrl, supabaseKey)
     : null
 
