@@ -17,23 +17,24 @@ import { LivePreviewListener } from '@/components/LivePreviewListener'
 
 export async function generateStaticParams() {
   try {
-    const payload = await getPayload({ config: configPromise })
-    const posts = await payload.find({
-      collection: 'posts',
-      draft: false,
-      limit: 1000,
-      overrideAccess: false,
-      pagination: false,
-      select: {
-        slug: true,
-      },
-    })
+    // const payload = await getPayload({ config: configPromise })
+    // const posts = await payload.find({
+    //   collection: 'posts',
+    //   draft: false,
+    //   limit: 1000,
+    //   overrideAccess: false,
+    //   pagination: false,
+    //   select: {
+    //     slug: true,
+    //   },
+    // })
 
-    const params = posts.docs.map(({ slug }) => {
-      return { slug }
-    })
+    // const params = posts.docs.map(({ slug }) => {
+    //   return { slug }
+    // })
 
-    return params
+    // return params
+    return []
   } catch (error) {
     // If database is unavailable during build, return empty array
     // Pages will be generated dynamically on first request instead

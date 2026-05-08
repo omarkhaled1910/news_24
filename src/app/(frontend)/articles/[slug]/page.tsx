@@ -15,19 +15,20 @@ import { TranscriptModal } from '@/components/TranscriptModal'
 
 export async function generateStaticParams() {
   try {
-    const payload = await getPayload({ config: configPromise })
-    const articles = await payload.find({
-      collection: 'articles',
-      draft: false,
-      limit: 1000,
-      overrideAccess: false,
-      pagination: false,
-      select: {
-        slug: true,
-      },
-    })
+    // const payload = await getPayload({ config: configPromise })
+    // const articles = await payload.find({
+    //   collection: 'articles',
+    //   draft: false,
+    //   limit: 1000,
+    //   overrideAccess: false,
+    //   pagination: false,
+    //   select: {
+    //     slug: true,
+    //   },
+    // })
 
-    return articles.docs.map(({ slug }) => ({ slug }))
+    // return articles.docs.map(({ slug }) => ({ slug }))
+    return []
   } catch (error) {
     // If database is unavailable during build, return empty array
     // Pages will be generated dynamically on first request instead
@@ -70,8 +71,7 @@ export default async function ArticlePage({ params: paramsPromise }: Args) {
     depth: 2,
   })
 
-  const author =
-    article.author && typeof article.author === 'object' ? article.author : null
+  const author = article.author && typeof article.author === 'object' ? article.author : null
 
   return (
     <article className="min-h-screen pb-16" dir={dir}>
@@ -246,9 +246,7 @@ export default async function ArticlePage({ params: paramsPromise }: Args) {
                       href={`/authors/${author.slug}`}
                       className="flex items-center gap-3 mb-3 group"
                     >
-                      {author.photo &&
-                      typeof author.photo === 'object' &&
-                      author.photo.url ? (
+                      {author.photo && typeof author.photo === 'object' && author.photo.url ? (
                         <img
                           src={author.photo.url}
                           alt={author.name}
@@ -270,7 +268,9 @@ export default async function ArticlePage({ params: paramsPromise }: Args) {
                           {author.name}
                         </div>
                         {author.handle && (
-                          <div className="text-xs text-muted-foreground truncate">{author.handle}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {author.handle}
+                          </div>
                         )}
                         {author.subscriberCount && (
                           <div className="text-xs text-muted-foreground">
@@ -312,7 +312,9 @@ export default async function ArticlePage({ params: paramsPromise }: Args) {
               {relatedResult.docs.length > 0 && (
                 <div className="bg-card border border-border rounded-xl overflow-hidden">
                   <div className="bg-foreground px-4 py-3">
-                    <h3 className="text-background font-bold text-sm">{t('article.relatedArticles')}</h3>
+                    <h3 className="text-background font-bold text-sm">
+                      {t('article.relatedArticles')}
+                    </h3>
                   </div>
                   <div className="p-4">
                     {relatedResult.docs.map((relArticle) => (
