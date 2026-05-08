@@ -1,5 +1,7 @@
-# fly.toml app configuration file for news-24
+# fly.toml app configuration file generated for news-24 on 2026-05-08T02:55:42Z
+#
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
 app = 'news-24'
 primary_region = 'iad'
