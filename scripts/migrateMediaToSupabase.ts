@@ -8,7 +8,7 @@ import config from '@payload-config'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PRIVATE_SUPABASE_SERVICE_ROLE_KEY!
-const bucketName = process.env..NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'media'
+const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'media'
 
 if (!supabaseUrl || supabaseUrl.includes('your-project')) {
   console.error(

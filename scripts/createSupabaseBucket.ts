@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PRIVATE_SUPABASE_SERVICE_ROLE_KEY!
-const bucketName = process.env..NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'media'
+const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'media'
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
