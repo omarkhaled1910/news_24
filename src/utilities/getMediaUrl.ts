@@ -21,7 +21,7 @@ export const getMediaUrl = (
   if (cacheTag && cacheTag !== '') {
     cacheTag = encodeURIComponent(cacheTag)
   }
-
+  console.log('url', url, 'supabaseUrl', supabaseUrl, 'bucketName', bucketName)
   // Transform local /media/ URLs to Supabase CDN URLs if configured
   if (url.startsWith('/media/') && supabaseUrl) {
     const filename = url.split('/').pop()?.split('?')[0] || ''
