@@ -32,14 +32,15 @@ const nextConfig = {
         protocol: 'https',
       },
       // Supabase Storage CDN - allow all paths from Supabase domain
-      ...(process.env.NEXT_PUBLIC_SUPABASE_URL
-        ? [
-            {
-              hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname,
-              protocol: 'https',
-            },
-          ]
-        : []),
+      ...[
+        process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hjcumckocwmrkleqxjrz.supabase.co',
+      ].map((item) => {
+        const url = new URL(item)
+        return {
+          hostname: url.hostname,
+          protocol: url.protocol.replace(':', ''),
+        }
+      }),
     ],
   },
   webpack: (webpackConfig) => {

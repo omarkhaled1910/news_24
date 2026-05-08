@@ -2,7 +2,12 @@ import type { Payload } from 'payload'
 import type { PayloadRequest } from 'payload'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const defaultSupabaseUrl = 'https://hjcumckocwmrkleqxjrz.supabase.co'
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.NEXT_PRIVATE_SUPABASE_URL ||
+  process.env.SUPABASE_URL ||
+  defaultSupabaseUrl
 const supabaseKey =
   process.env.NEXT_PRIVATE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 const bucketName =

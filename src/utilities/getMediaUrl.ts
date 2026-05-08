@@ -15,13 +15,21 @@ export const getMediaUrl = (
   if (!url) return ''
 
   // Supabase Storage CDN configuration
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'news_24'
+  const defaultSupabaseUrl = 'https://hjcumckocwmrkleqxjrz.supabase.co'
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.NEXT_PRIVATE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    defaultSupabaseUrl
+  const bucketName =
+    process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME ||
+    process.env.SUPABASE_STORAGE_BUCKET_NAME ||
+    'news_24'
 
   if (cacheTag && cacheTag !== '') {
     cacheTag = encodeURIComponent(cacheTag)
   }
-  console.log('url', url, 'supabaseUrl', supabaseUrl, 'bucketName', bucketName)
+
   // Transform local /media/ URLs to Supabase CDN URLs if configured
   if (url.startsWith('/media/') && supabaseUrl) {
     const filename = url.split('/').pop()?.split('?')[0] || ''
