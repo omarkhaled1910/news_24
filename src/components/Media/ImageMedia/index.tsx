@@ -45,7 +45,7 @@ const placeholderBlur =
  * remotePatterns for optimization. Only add `loader` if using external CDNs with custom transforms.
  */
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const bucketName = process.env.SUPABASE_STORAGE_BUCKET_NAME || 'news_24'
+const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'news_24'
 export const SUPABASE_DETECTOR_STRING = 'supabase.co'
 export const ImageMedia: React.FC<MediaProps> = (props) => {
   const {

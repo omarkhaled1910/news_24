@@ -81,7 +81,7 @@ Note: The tags array must contain 20-25 accurate tags.`
 // OpenAI client (lazy)
 // ---------------------------------------------------------------------------
 const getOpenAIClient = () => {
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.NEXT_PRIVATE_OPENAI_API_KEY
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is not set')
   }
@@ -100,7 +100,9 @@ async function callWithRetry<T>(fn: () => Promise<T>, maxRetries = MAX_RETRIES):
       const isRetryable = typeof status === 'number' && [429, 500, 503].includes(status)
       if (!isRetryable || attempt === maxRetries) throw error
       const delay = RETRY_BASE_DELAY_MS * 2 ** attempt
-      console.warn(`[OpenAI] Retry ${attempt + 1}/${maxRetries} after ${delay}ms (status ${status})`)
+      console.warn(
+        `[OpenAI] Retry ${attempt + 1}/${maxRetries} after ${delay}ms (status ${status})`,
+      )
       await new Promise((r) => setTimeout(r, delay))
     }
   }
@@ -211,9 +213,7 @@ ${transcript.substring(0, MAX_TRANSCRIPT_CHARS)}`
   try {
     parsed = JSON.parse(responseText)
   } catch {
-    throw new Error(
-      `[OpenAI] Failed to parse response as JSON: ${responseText.substring(0, 200)}`,
-    )
+    throw new Error(`[OpenAI] Failed to parse response as JSON: ${responseText.substring(0, 200)}`)
   }
 
   // Build content from paragraphs
@@ -266,7 +266,10 @@ function headingTag(level: number): string {
  * @param content - The structured text content (with markdown-style headings)
  * @param direction - Text direction: 'rtl' for Arabic, 'ltr' for English
  */
-export function convertToLexicalJSON(content: string, direction: 'rtl' | 'ltr' = 'rtl'): LexicalEditorState {
+export function convertToLexicalJSON(
+  content: string,
+  direction: 'rtl' | 'ltr' = 'rtl',
+): LexicalEditorState {
   const lines = content.split('\n\n').filter((line) => line.trim())
 
   const children: LexicalBlockNode[] = []

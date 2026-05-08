@@ -5,9 +5,6 @@ app = 'news-24'
 primary_region = 'iad'
 
 [build]
-  [build.args]
-    DATABASE_URL = ''  # Will be set from secrets during deploy
-    PAYLOAD_SECRET = ''  # Will be set from secrets during deploy
 
 [http_service]
   internal_port = 3000

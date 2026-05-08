@@ -168,7 +168,7 @@ export async function runNewsPipeline(): Promise<{
           })
 
           // Step 6: Generate article using OpenAI
-          if (!process.env.OPENAI_API_KEY) {
+          if (!process.env.NEXT_PRIVATE_OPENAI_API_KEY) {
             console.warn('[Pipeline] OPENAI_API_KEY not set, skipping article generation')
             continue
           }
@@ -248,10 +248,7 @@ export async function runNewsPipeline(): Promise<{
           console.log(`[Pipeline] Article created: "${generatedArticle.title}"`)
         } catch (videoError) {
           errors++
-          console.error(
-            `[Pipeline] Error processing video ${videoData.videoId}:`,
-            videoError,
-          )
+          console.error(`[Pipeline] Error processing video ${videoData.videoId}:`, videoError)
         }
       }
 

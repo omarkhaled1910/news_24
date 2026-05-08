@@ -3,8 +3,8 @@ import type { PayloadRequest } from 'payload'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const bucketName = process.env.SUPABASE_STORAGE_BUCKET_NAME || 'media'
+const supabaseKey = process.env.NEXT_PRIVATE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || process.env.SUPABASE_STORAGE_BUCKET_NAME || 'media'
 
 // Initialize Supabase client if credentials are available
 const supabase =
@@ -51,15 +51,22 @@ export async function downloadAndUploadThumbnail(
       const filename = `${uuid}${ext}`
       const supabaseUrlPath = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filename}`
 
-      const { error } = await supabase.storage.from(bucketName).upload(filename, buffer, {
+      const { data, error } = await supabase.storage.from(bucketName).upload(filename, buffer, {
         contentType,
         upsert: true,
+        cacheControl: '31536000', // 1 year cache
       })
 
       if (error) {
-        console.error('Failed to upload to Supabase:', error.message)
+        console.error('Failed to upload to Supabase:', error)
+        console.error('  - Bucket:', bucketName)
+        console.error('  - Filename:', filename)
+        console.error('  - Error message:', error.message)
+        console.error('  - Error status:', (error as any).statusCode || 'unknown')
         return null
       }
+
+      console.log('[Thumbnail] Supabase upload successful:', data?.path)
 
       // Create Media record with Supabase URL
       const media = await payload.create({

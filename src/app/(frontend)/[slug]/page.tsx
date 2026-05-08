@@ -14,27 +14,34 @@ import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
 export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const pages = await payload.find({
-    collection: 'pages',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    select: {
-      slug: true,
-    },
-  })
-
-  const params = pages.docs
-    ?.filter((doc) => {
-      return doc.slug !== 'home'
-    })
-    .map(({ slug }) => {
-      return { slug }
+  try {
+    const payload = await getPayload({ config: configPromise })
+    const pages = await payload.find({
+      collection: 'pages',
+      draft: false,
+      limit: 1000,
+      overrideAccess: false,
+      pagination: false,
+      select: {
+        slug: true,
+      },
     })
 
-  return params
+    const params = pages.docs
+      ?.filter((doc) => {
+        return doc.slug !== 'home'
+      })
+      .map(({ slug }) => {
+        return { slug }
+      })
+
+    return params
+  } catch (error) {
+    // If database is unavailable during build, return empty array
+    // Pages will be generated dynamically on first request instead
+    console.warn('Database unavailable during build, generating pages dynamically:', error)
+    return []
+  }
 }
 
 type Args = {

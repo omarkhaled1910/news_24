@@ -16,7 +16,7 @@ export const getMediaUrl = (
 
   // Supabase Storage CDN configuration
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const bucketName = process.env.SUPABASE_STORAGE_BUCKET_NAME || 'media'
+  const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'media'
 
   if (cacheTag && cacheTag !== '') {
     cacheTag = encodeURIComponent(cacheTag)

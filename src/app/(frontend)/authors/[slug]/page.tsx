@@ -13,24 +13,31 @@ import { formatSubscriberCount, formatViewCount } from '@/utilities/authorMetada
 import { getServerI18n } from '@/i18n/server'
 
 export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const authors = await payload.find({
-    collection: 'authors',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    where: {
-      active: {
-        equals: true,
+  try {
+    const payload = await getPayload({ config: configPromise })
+    const authors = await payload.find({
+      collection: 'authors',
+      draft: false,
+      limit: 1000,
+      overrideAccess: false,
+      pagination: false,
+      where: {
+        active: {
+          equals: true,
+        },
       },
-    },
-    select: {
-      slug: true,
-    },
-  })
+      select: {
+        slug: true,
+      },
+    })
 
-  return authors.docs.map(({ slug }) => ({ slug }))
+    return authors.docs.map(({ slug }) => ({ slug }))
+  } catch (error) {
+    // If database is unavailable during build, return empty array
+    // Pages will be generated dynamically on first request instead
+    console.warn('Database unavailable during build, generating authors dynamically:', error)
+    return []
+  }
 }
 
 type Args = {

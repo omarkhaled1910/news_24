@@ -56,7 +56,7 @@ export default buildConfig({
   },
   editor: defaultLexical,
   db: mongooseAdapter({
-    url: process.env.DATABASE_URL || '',
+    url: process.env.NEXT_PRIVATE_DATABASE_URL || '',
     // Disable MongoDB transactions to prevent timeout errors in long-running
     // background pipelines (cron news pipeline). This project's hooks only
     // perform cache revalidation, so transactional atomicity is not required.
@@ -69,7 +69,8 @@ export default buildConfig({
       minPoolSize: 2, // Minimum pool size
       maxIdleTimeMS: 30000, // Close idle connections after 30 seconds
       // TLS configuration - only enable for production (MongoDB Atlas), not local MongoDB
-      ...(process.env.DATABASE_URL?.includes('mongodb+srv') || process.env.DATABASE_URL?.includes('ssl=true')
+      ...(process.env.NEXT_PRIVATE_DATABASE_URL?.includes('mongodb+srv') ||
+      process.env.NEXT_PRIVATE_DATABASE_URL?.includes('ssl=true')
         ? { tls: true }
         : {}),
     },
@@ -92,7 +93,7 @@ export default buildConfig({
   cors: [getServerSideURL()].filter(Boolean),
   globals: [Header, Footer],
   plugins,
-  secret: process.env.PAYLOAD_SECRET,
+  secret: process.env.NEXT_PRIVATE_PAYLOAD_SECRET || '',
   sharp,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
