@@ -19,10 +19,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set environment for build - MongoDB Atlas connection
+# Set environment for build - Use build args so Fly.io secrets are available during build
+ARG DATABASE_URL
+ARG PAYLOAD_SECRET
 ENV NODE_ENV production
-ENV PAYLOAD_SECRET=temp-build-secret-change-in-production
-ENV DATABASE_URL=mongodb+srv://omarkhaled1681997_db_user:1KbkJwzEcroDYdzX@cluster0.mpjfggw.mongodb.net/news_24
+ENV PAYLOAD_SECRET=${PAYLOAD_SECRET}
+ENV DATABASE_URL=${DATABASE_URL}
 
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
