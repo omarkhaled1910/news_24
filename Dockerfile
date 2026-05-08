@@ -1,14 +1,21 @@
 # Multi-process Dockerfile for Fly.io - Runs both MongoDB and Next.js app
-FROM node:22.17.0-alpine AS base
+# Using Debian base for better MongoDB compatibility
+FROM node:22.17.0-slim AS base
 
 # Install MongoDB and dependencies
-RUN apk add --no-cache \
-    libc6-compat \
-    mongodb \
-    mongodb-tools \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    wget \
+    gnupg \
     python3 \
-    py3-pip \
-    && pip3 install --no-cache-dir honcho
+    python3-pip \
+    && pip3 install --no-cache-dir honcho \
+    && wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | apt-key add - \
+    && echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list \
+    && apt-get update && \
+    apt-get install -y --no-install-recommends mongodb-org && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -32,8 +39,8 @@ COPY . .
 
 # Set environment for build
 ENV NODE_ENV production
-ENV PAYLOAD_SECRET=temp-build-secret
-ENV DATABASE_URL=mongodb://localhost:27018/news_24
+ENV PAYLOAD_SECRET=temp-build-secret-change-in-production
+ENV DATABASE_URL=mongodb://localhost:27017/news_24
 
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
@@ -50,7 +57,7 @@ ENV DATABASE_URL=mongodb://localhost:27017/news_24
 ENV PORT 3000
 
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser -D -u 1001 -G nodejs nextjs
+    adduser --system --uid 1001 --ingroup nodejs nextjs
 
 # Create MongoDB data directory with proper permissions
 RUN mkdir -p /data/db && \
