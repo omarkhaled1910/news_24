@@ -15,7 +15,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=mongodb://mongo:27018/news_24
+      - DATABASE_URL=mongodb://mongo:27017/news_24
 
   mongo:
     image: mongo:latest

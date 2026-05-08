@@ -68,11 +68,10 @@ export default buildConfig({
       maxPoolSize: 10, // Maximum pool size
       minPoolSize: 2, // Minimum pool size
       maxIdleTimeMS: 30000, // Close idle connections after 30 seconds
-      // TLS configuration for serverless environments (Vercel)
-      tls: true,
-      // Use the MongoDB Node.js driver's default TLS settings
-      // If you still get SSL errors, you can try:
-      // tlsAllowInvalidCertificates: false,
+      // TLS configuration - only enable for production (MongoDB Atlas), not local MongoDB
+      ...(process.env.DATABASE_URL?.includes('mongodb+srv') || process.env.DATABASE_URL?.includes('ssl=true')
+        ? { tls: true }
+        : {}),
     },
   }),
   collections: [
