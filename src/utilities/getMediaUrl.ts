@@ -16,7 +16,7 @@ export const getMediaUrl = (
 
   // Supabase Storage CDN configuration
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'media'
+  const bucketName = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME || 'news_24'
 
   if (cacheTag && cacheTag !== '') {
     cacheTag = encodeURIComponent(cacheTag)
@@ -34,19 +34,15 @@ export const getMediaUrl = (
   if (url.startsWith('/api/media/file/')) {
     // Extract filename from Payload API URL
     const filename = url.split('/').pop()?.split('?')[0] || ''
-    const supabaseCdnUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filename}`
-    // Don't add cache tag to Supabase URLs
-    return supabaseCdnUrl
-
     if (supabaseUrl) {
       // Use Supabase CDN if configured
       const supabaseCdnUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filename}`
       // Don't add cache tag to Supabase URLs
       return supabaseCdnUrl
-    } else {
-      // Otherwise use direct /media/ path
-      url = `/media/${filename}`
     }
+
+    // Otherwise use direct /media/ path
+    url = `/media/${filename}`
   }
 
   // Otherwise prepend client-side URL

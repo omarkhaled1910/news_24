@@ -74,12 +74,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
 
     const cacheTag = resource.updatedAt
 
-    // src = getMediaUrl(url, cacheTag, isSupabaseImage)
-    const filename = url?.split('/').pop()?.split('?')[0] || ''
-    const supabaseCdnUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${filename}`
-    src = supabaseCdnUrl
-    // Don't add cache tag to Supabase URLs
-    // return supabaseCdnUrl
+    src = getMediaUrl(url, cacheTag, isSupabaseImage)
   }
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
