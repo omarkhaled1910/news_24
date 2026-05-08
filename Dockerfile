@@ -24,8 +24,8 @@ COPY . .
 # We use a placeholder secret for build; real secret from runtime is used for actual operation.
 # Static params generation will gracefully fall back to dynamic if DB is unavailable.
 ENV NODE_ENV production
-ENV PAYLOAD_SECRET=build-time-placeholder-secret-for-payload
-ENV DATABASE_URL=mongodb+srv://omarkhaled1681997_db_user:1KbkJwzEcroDYdzX@cluster0.mpjfggw.mongodb.net/news_24
+ENV NEXT_PRIVATE_PAYLOAD_SECRET=build-time-placeholder-secret-for-payload
+ENV NEXT_PRIVATE_DATABASE_URL=mongodb+srv://omarkhaled1681997_db_user:1KbkJwzEcroDYdzX@cluster0.mpjfggw.mongodb.net/news_24
 
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
