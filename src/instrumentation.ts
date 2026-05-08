@@ -9,7 +9,7 @@
 export async function register() {
   // Only run on the Node.js server runtime (not Edge)
   // Skip Vercel since it uses Vercel Cron Jobs instead
-  if (process.env.NEXT_RUNTIME === 'nodejs' && !process.env.VERCEL) {
+  if (process.env.NEXT_RUNTIME === 'nodejs' && !process.env.START_CRON_JOBS) {
     const { startCronJobs } = await import('./utilities/cron')
     startCronJobs()
   }
