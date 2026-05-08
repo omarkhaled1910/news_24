@@ -11,53 +11,63 @@ import { getServerI18n } from '@/i18n/server'
 
 const getHomepageData = unstable_cache(
   async () => {
-    const payload = await getPayload({ config: configPromise })
+    try {
+      const payload = await getPayload({ config: configPromise })
 
-    // Fetch featured/hero article
-    const featuredResult = await payload.find({
-      collection: 'articles',
-      where: {
-        _status: { equals: 'published' },
-        featured: { equals: true },
-      },
-      limit: 1,
-      sort: '-publishedAt',
-      depth: 2,
-    })
+      // Fetch featured/hero article
+      const featuredResult = await payload.find({
+        collection: 'articles',
+        where: {
+          _status: { equals: 'published' },
+          featured: { equals: true },
+        },
+        limit: 1,
+        sort: '-publishedAt',
+        depth: 2,
+      })
 
-    // Fetch latest articles
-    const latestResult = await payload.find({
-      collection: 'articles',
-      where: {
-        _status: { equals: 'published' },
-      },
-      limit: 12,
-      sort: '-publishedAt',
-      depth: 2,
-    })
+      // Fetch latest articles
+      const latestResult = await payload.find({
+        collection: 'articles',
+        where: {
+          _status: { equals: 'published' },
+        },
+        limit: 12,
+        sort: '-publishedAt',
+        depth: 2,
+      })
 
-    // Fetch breaking news
-    const breakingResult = await payload.find({
-      collection: 'articles',
-      where: {
-        _status: { equals: 'published' },
-        breakingNews: { equals: true },
-      },
-      limit: 5,
-      sort: '-publishedAt',
-    })
+      // Fetch breaking news
+      const breakingResult = await payload.find({
+        collection: 'articles',
+        where: {
+          _status: { equals: 'published' },
+          breakingNews: { equals: true },
+        },
+        limit: 5,
+        sort: '-publishedAt',
+      })
 
-    // Fetch categories
-    const categoriesResult = await payload.find({
-      collection: 'categories',
-      limit: 20,
-    })
+      // Fetch categories
+      const categoriesResult = await payload.find({
+        collection: 'categories',
+        limit: 20,
+      })
 
-    return {
-      featured: featuredResult.docs[0] || null,
-      latest: latestResult.docs || [],
-      breaking: breakingResult.docs || [],
-      categories: categoriesResult.docs || [],
+      return {
+        featured: featuredResult.docs[0] || null,
+        latest: latestResult.docs || [],
+        breaking: breakingResult.docs || [],
+        categories: categoriesResult.docs || [],
+      }
+    } catch (error) {
+      console.warn('Database unavailable, rendering homepage without data:', error)
+      return {
+        featured: null,
+        latest: [],
+        breaking: [],
+        categories: [],
+      }
     }
   },
   ['homepage'],
@@ -108,5 +118,5 @@ export default async function HomePage() {
   )
 }
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 export const revalidate = 60

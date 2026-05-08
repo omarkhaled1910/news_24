@@ -21,11 +21,11 @@ COPY . .
 
 # Set environment for build
 # NOTE: Fly.io secrets are NOT available during build.
-# We use a placeholder secret for build; real secret from runtime is used for actual operation.
-# Static params generation will gracefully fall back to dynamic if DB is unavailable.
-ENV NODE_ENV production
+# Use placeholders only — never bake real secrets into the image.
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_PRIVATE_PAYLOAD_SECRET=build-time-placeholder-secret-for-payload
-ENV NEXT_PRIVATE_DATABASE_URL=mongodb+srv://omarkhaled1681997_db_user:1KbkJwzEcroDYdzX@cluster0.mpjfggw.mongodb.net/news_24
+ENV NEXT_PRIVATE_DATABASE_URL=
 
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
@@ -37,8 +37,9 @@ RUN \
 # Production image
 FROM base AS runner
 
-ENV NODE_ENV production
-ENV PORT 3000
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 --ingroup nodejs nextjs
@@ -55,6 +56,6 @@ USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
+ENV PORT=3000
 
 CMD HOSTNAME="0.0.0.0" node server.js
