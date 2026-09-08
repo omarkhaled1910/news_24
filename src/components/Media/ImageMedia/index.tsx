@@ -44,7 +44,6 @@ const placeholderBlur =
  * TL;DR: Template uses relative URLs + getMediaUrl() to construct full URLs, then relies on
  * remotePatterns for optimization. Only add `loader` if using external CDNs with custom transforms.
  */
-export const SUPABASE_DETECTOR_STRING = 'supabase.co'
 export const ImageMedia: React.FC<MediaProps> = (props) => {
   const {
     alt: altFromProps,
@@ -62,7 +61,6 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
   let height: number | undefined
   let alt = altFromProps
   let src: StaticImageData | string = srcFromProps || ''
-  const isSupabaseImage = typeof src === 'string' && src.includes(SUPABASE_DETECTOR_STRING)
   if (!src && resource && typeof resource === 'object') {
     const { alt: altFromResource, height: fullHeight, url, width: fullWidth } = resource
 
@@ -72,7 +70,7 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
 
     const cacheTag = resource.updatedAt
 
-    src = getMediaUrl(url, cacheTag, isSupabaseImage)
+    src = getMediaUrl(url, cacheTag)
   }
 
   const loading = loadingFromProps || (!priority ? 'lazy' : undefined)
@@ -84,7 +82,6 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         .map(([, value]) => `(max-width: ${value}px) ${value * 2}w`)
         .join(', ')
 
-  // Check if the image source is from Supabase - if so, use unoptimized to avoid upstream errors
   return (
     <picture className={cn(pictureClassName)}>
       <NextImage
@@ -100,7 +97,6 @@ export const ImageMedia: React.FC<MediaProps> = (props) => {
         sizes={sizes}
         src={src}
         width={!fill ? width : undefined}
-        unoptimized={isSupabaseImage}
       />
     </picture>
   )

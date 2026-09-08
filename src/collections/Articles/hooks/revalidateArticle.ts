@@ -2,6 +2,18 @@ import type { CollectionAfterChangeHook, CollectionAfterDeleteHook } from 'paylo
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 
+/**
+ * `revalidatePath`/`revalidateTag` only work inside an active Next.js request
+ * (they read from a request-scoped store). The news pipeline can run outside
+ * any request — e.g. the in-process node-cron scheduler in `utilities/cron.ts`
+ * — in which case this throws. That's expected there, not a real failure: the
+ * article page itself is `force-dynamic` (always fresh) and the homepage has
+ * a 60s time-based fallback, so content still shows up shortly either way.
+ */
+function isMissingRequestContextError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes('static generation store missing')
+}
+
 export const revalidateArticle: CollectionAfterChangeHook = ({
   doc,
   previousDoc,
@@ -29,7 +41,13 @@ export const revalidateArticle: CollectionAfterChangeHook = ({
         revalidateTag('homepage')
       }
     } catch (error) {
-      payload.logger.error(`Error revalidating article: ${error}`)
+      if (isMissingRequestContextError(error)) {
+        payload.logger.info(
+          'Skipped revalidation (no active request context, e.g. a background cron run) — relying on time-based revalidation instead',
+        )
+      } else {
+        payload.logger.error(`Error revalidating article: ${error}`)
+      }
     }
   }
   return doc

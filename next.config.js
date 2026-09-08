@@ -31,16 +31,10 @@ const nextConfig = {
         hostname: 'yt3.ggpht.com',
         protocol: 'https',
       },
-      // Supabase Storage CDN - allow all paths from Supabase domain
-      ...[
-        process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hjcumckocwmrkleqxjrz.supabase.co',
-      ].map((item) => {
-        const url = new URL(item)
-        return {
-          hostname: url.hostname,
-          protocol: url.protocol.replace(':', ''),
-        }
-      }),
+      {
+        hostname: '*.supabase.co',
+        protocol: 'https',
+      },
     ],
   },
   webpack: (webpackConfig) => {

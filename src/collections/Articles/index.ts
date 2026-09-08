@@ -19,13 +19,13 @@ import { slugField } from 'payload'
 import type { Slugify } from 'payload/shared'
 
 /**
- * Custom slugify function that supports Arabic (and other Unicode) characters.
+ * Slugify text while supporting Arabic (and other Unicode) characters.
  * Payload's default slugify strips everything that isn't ASCII \w, which removes Arabic text.
  */
-const arabicSlugify: Slugify = ({ valueToSlugify }) => {
-  if (!valueToSlugify) return ''
+export function slugifyArabicText(text: string): string {
+  if (!text) return ''
 
-  return valueToSlugify
+  return text
     .trim()
     .replace(/[^\p{L}\p{N}\s-]/gu, '') // Keep all Unicode letters, numbers, spaces, hyphens
     .replace(/\s+/g, '-') // Replace spaces with hyphens
@@ -33,6 +33,8 @@ const arabicSlugify: Slugify = ({ valueToSlugify }) => {
     .replace(/^-|-$/g, '') // Trim leading/trailing hyphens
     .toLowerCase()
 }
+
+const arabicSlugify: Slugify = ({ valueToSlugify }) => slugifyArabicText(valueToSlugify)
 
 import {
   MetaDescriptionField,

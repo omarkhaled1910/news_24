@@ -57,16 +57,29 @@ function parseViewCount(text: string): number {
 }
 
 /**
- * Fetch latest videos from a YouTube channel, skipping any video IDs in the
- * provided set.  The function paginates through the channel's video feed until
- * it collects `maxResults` *new* videos or runs out of pages.
- *
- * Note: Updated for youtubei.js v17 which uses a new LockupView structure.
+ * Check whether a video is currently broadcasting live (as opposed to a
+ * finished livestream/VOD). Used to skip in-progress lives until they end.
  */
-export async function fetchChannelVideos(
+export async function isVideoCurrentlyLive(videoId: string): Promise<boolean> {
+  try {
+    const yt = await getInnertube()
+    const info = await yt.getBasicInfo(videoId)
+    return info?.basic_info?.is_live === true
+  } catch (error) {
+    console.error(`Error checking live status for ${videoId}:`, error)
+    return false
+  }
+}
+
+/**
+ * Shared pagination + parsing logic for a channel feed (regular uploads or
+ * the Live tab). Both feeds return the same v17 LockupView/RichItem structure.
+ */
+async function fetchChannelFeed(
   channelId: string,
-  maxResults: number = 10,
-  skipVideoIds: Set<string> = new Set(),
+  feedType: 'videos' | 'live',
+  maxResults: number,
+  skipVideoIds: Set<string>,
 ): Promise<YouTubeVideoData[]> {
   const MAX_PAGES = 5 // safety cap to avoid infinite pagination
 
@@ -74,7 +87,7 @@ export async function fetchChannelVideos(
     const yt = await getInnertube()
     const channel = await yt.getChannel(channelId)
     // Use a loose type to handle both old and new response structures
-    let feed: any = await channel.getVideos()
+    let feed: any = feedType === 'live' ? await channel.getLiveStreams() : await channel.getVideos()
 
     const results: YouTubeVideoData[] = []
     let page = 0
@@ -112,6 +125,10 @@ export async function fetchChannelVideos(
 
         // Skip videos we already know about
         if (skipVideoIds.has(videoId)) continue
+
+        // For the Live tab, skip streams that are still in progress —
+        // there's no final transcript until the broadcast ends.
+        if (feedType === 'live' && (await isVideoCurrentlyLive(videoId))) continue
 
         // Get title - different structure
         let title = ''
@@ -176,9 +193,36 @@ export async function fetchChannelVideos(
 
     return results
   } catch (error) {
-    console.error(`Error fetching videos for channel ${channelId}:`, error)
+    console.error(`Error fetching ${feedType} for channel ${channelId}:`, error)
     throw error
   }
+}
+
+/**
+ * Fetch latest videos from a YouTube channel, skipping any video IDs in the
+ * provided set.  The function paginates through the channel's video feed until
+ * it collects `maxResults` *new* videos or runs out of pages.
+ *
+ * Note: Updated for youtubei.js v17 which uses a new LockupView structure.
+ */
+export async function fetchChannelVideos(
+  channelId: string,
+  maxResults: number = 10,
+  skipVideoIds: Set<string> = new Set(),
+): Promise<YouTubeVideoData[]> {
+  return fetchChannelFeed(channelId, 'videos', maxResults, skipVideoIds)
+}
+
+/**
+ * Fetch videos from a channel's Live tab, skipping known video IDs and any
+ * stream that is still currently broadcasting (no final transcript yet).
+ */
+export async function fetchChannelLiveVideos(
+  channelId: string,
+  maxResults: number = 10,
+  skipVideoIds: Set<string> = new Set(),
+): Promise<YouTubeVideoData[]> {
+  return fetchChannelFeed(channelId, 'live', maxResults, skipVideoIds)
 }
 
 /**
