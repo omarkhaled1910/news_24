@@ -1,14 +1,109 @@
-import cron, { type ScheduledTask } from 'node-cron'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { fetchChannelVideos, fetchChannelLiveVideos, type YouTubeVideoData } from './youtube'
+import {
+  fetchChannelVideos,
+  fetchChannelLiveVideos,
+  isYouTubeRateLimitError,
+  type YouTubeVideoData,
+} from './youtube'
 import { extractTranscript } from './transcript'
 import { generateArticleFromTranscript, convertToLexicalJSON } from './openai'
 import { downloadAndUploadThumbnail } from './thumbnailDownloader'
 import { slugifyArabicText } from '@/collections/Articles'
 import type { Author, Video } from '@/payload-types'
 
-let cronJob: ScheduledTask | null = null
+// ---------------------------------------------------------------------------
+// Adaptive scheduler
+// ---------------------------------------------------------------------------
+// A fixed 5-minute cron interval doesn't account for two realities: a single
+// run can take much longer than 5 minutes (reasoning models like DeepSeek R1
+// can take minutes per article), and hammering YouTube on a fixed cadence
+// risks/worsens 429 "too many requests" rate-limiting. So instead of
+// node-cron's fixed schedule, this self-reschedules after each run: a normal
+// (jittered) ~5 min delay after a clean run, or an exponentially growing
+// backoff — reset after the next clean run — whenever YouTube rate-limits us.
+const BASE_INTERVAL_MS = 5 * 60 * 1000 // 5 minutes
+const RATE_LIMIT_BACKOFF_START_MS = 15 * 60 * 1000 // 15 minutes
+const RATE_LIMIT_BACKOFF_MAX_MS = 2 * 60 * 60 * 1000 // 2 hours
+const JITTER_RATIO = 0.2 // +/-20%, avoids a perfectly predictable request cadence
+
+let scheduledTimeout: NodeJS.Timeout | null = null
+let pipelineRunning = false
+let currentBackoffMs = RATE_LIMIT_BACKOFF_START_MS
+
+function withJitter(ms: number): number {
+  const jitter = ms * JITTER_RATIO
+  return Math.round(ms - jitter + Math.random() * jitter * 2)
+}
+
+/**
+ * Run the pipeline, skipping if a previous run is still in progress. Some
+ * models (e.g. reasoning models like DeepSeek R1 via OpenRouter) can take
+ * several minutes per article — comfortably longer than the base interval —
+ * so without this guard, overlapping runs could pick the same author/videos
+ * concurrently and waste API calls.
+ */
+async function runNewsPipelineGuarded(): Promise<Awaited<ReturnType<typeof runNewsPipeline>> | null> {
+  if (pipelineRunning) {
+    console.log('[Cron] Previous pipeline run still in progress, skipping this tick')
+    return null
+  }
+  pipelineRunning = true
+  try {
+    return await runNewsPipeline()
+  } finally {
+    pipelineRunning = false
+  }
+}
+
+async function runAndReschedule(): Promise<void> {
+  console.log('[Cron] Running news pipeline at', new Date().toISOString())
+  let nextDelay = withJitter(BASE_INTERVAL_MS)
+  try {
+    const result = await runNewsPipelineGuarded()
+    if (result?.youtubeRateLimited) {
+      nextDelay = withJitter(currentBackoffMs)
+      console.warn(
+        `[Cron] YouTube rate-limited this run — backing off ~${Math.round(nextDelay / 60000)} min before the next run`,
+      )
+      currentBackoffMs = Math.min(currentBackoffMs * 2, RATE_LIMIT_BACKOFF_MAX_MS)
+    } else if (result) {
+      currentBackoffMs = RATE_LIMIT_BACKOFF_START_MS // reset backoff after a clean run
+    }
+  } catch (error) {
+    console.error('[Cron] Pipeline error:', error)
+  }
+  scheduledTimeout = setTimeout(runAndReschedule, nextDelay)
+}
+
+/**
+ * Start the automated news cron job.
+ * Self-reschedules after each run (~5 min baseline, backing off when
+ * YouTube rate-limits us) rather than running on a fixed interval.
+ */
+export function startCronJobs(): void {
+  if (scheduledTimeout) {
+    console.log('[Cron] Jobs already running')
+    return
+  }
+
+  console.log('[Cron] Starting automated news pipeline...')
+  currentBackoffMs = RATE_LIMIT_BACKOFF_START_MS
+  scheduledTimeout = setTimeout(runAndReschedule, 10000) // 10 second delay for server startup
+
+  console.log('[Cron] News pipeline scheduled (adaptive interval, ~5 min baseline)')
+}
+
+/**
+ * Stop the cron jobs
+ */
+export function stopCronJobs(): void {
+  if (scheduledTimeout) {
+    clearTimeout(scheduledTimeout)
+    scheduledTimeout = null
+    console.log('[Cron] Jobs stopped')
+  }
+}
 
 /**
  * Get a fresh payload instance to avoid connection timeout issues
@@ -16,52 +111,6 @@ let cronJob: ScheduledTask | null = null
  */
 async function getFreshPayload() {
   return await getPayload({ config })
-}
-
-/**
- * Start the automated news cron job.
- * Runs every 5 minutes, picking a random active author each time.
- */
-export function startCronJobs(): void {
-  if (cronJob) {
-    console.log('[Cron] Jobs already running')
-    return
-  }
-
-  console.log('[Cron] Starting automated news pipeline...')
-
-  // Run every 5 minutes
-  cronJob = cron.schedule('*/5 * * * *', async () => {
-    console.log('[Cron] Running news pipeline at', new Date().toISOString())
-    try {
-      await runNewsPipeline()
-    } catch (error) {
-      console.error('[Cron] Pipeline error:', error)
-    }
-  })
-
-  // Also run immediately on startup (with a short delay)
-  setTimeout(async () => {
-    console.log('[Cron] Running initial pipeline...')
-    try {
-      await runNewsPipeline()
-    } catch (error) {
-      console.error('[Cron] Initial pipeline error:', error)
-    }
-  }, 10000) // 10 second delay for server startup
-
-  console.log('[Cron] News pipeline scheduled every 5 minutes')
-}
-
-/**
- * Stop the cron jobs
- */
-export function stopCronJobs(): void {
-  if (cronJob) {
-    cronJob.stop()
-    cronJob = null
-    console.log('[Cron] Jobs stopped')
-  }
 }
 
 /**
@@ -192,6 +241,7 @@ async function processWorkItem(
       author.name,
       youtubeUrl,
       author.language || 'ar',
+      author.aiModel,
     )
 
     // Download and upload thumbnail as hero image
@@ -220,6 +270,7 @@ async function processWorkItem(
       youtubeUrl,
       publishedAt: new Date().toISOString(),
       isAutoGenerated: true,
+      aiModel: generatedArticle.aiModel,
       featured: false,
       breakingNews: false,
       tags: generatedArticle.tags.map((tag) => ({ tag })),
@@ -287,10 +338,12 @@ export async function runNewsPipeline(): Promise<{
   processed: number
   articles: number
   errors: number
+  youtubeRateLimited: boolean
 }> {
   let processed = 0
   let articles = 0
   let errors = 0
+  let youtubeRateLimited = false
 
   try {
     // Step 1: Get all active authors and pick one at random
@@ -304,7 +357,7 @@ export async function runNewsPipeline(): Promise<{
 
     if (authors.length === 0) {
       console.log('[Pipeline] No active authors found')
-      return { processed: 0, articles: 0, errors: 0 }
+      return { processed: 0, articles: 0, errors: 0, youtubeRateLimited: false }
     }
 
     const author = authors[Math.floor(Math.random() * authors.length)]
@@ -323,20 +376,42 @@ export async function runNewsPipeline(): Promise<{
       console.log(`[Pipeline] ${knownVideoIds.size} known videos for "${author.name}"`)
 
       // Step 3: Fetch next batch of new uploaded videos (skips known ones automatically)
-      const newVideos = await fetchChannelVideos(author.channelId, 5, knownVideoIds)
-      console.log(`[Pipeline] Fetched ${newVideos.length} new videos from "${author.name}"`)
+      let newVideos: YouTubeVideoData[] = []
+      try {
+        newVideos = await fetchChannelVideos(author.channelId, 5, knownVideoIds)
+        console.log(`[Pipeline] Fetched ${newVideos.length} new videos from "${author.name}"`)
+      } catch (fetchError) {
+        if (isYouTubeRateLimitError(fetchError)) {
+          youtubeRateLimited = true
+          console.warn(
+            `[Pipeline] YouTube rate-limited while fetching videos for "${author.name}" — falling back to backlog this run`,
+          )
+        } else {
+          throw fetchError
+        }
+      }
 
       // Step 3b: Also check the channel's Live tab every cycle for new or
       // finished livestreams (in-progress lives are filtered out already).
+      // Skipped if we're already rate-limited — no point making it worse.
       let liveVideos: YouTubeVideoData[] = []
-      try {
-        const seenIds = new Set([...knownVideoIds, ...newVideos.map((v) => v.videoId)])
-        liveVideos = await fetchChannelLiveVideos(author.channelId, 5, seenIds)
-        if (liveVideos.length > 0) {
-          console.log(`[Pipeline] Fetched ${liveVideos.length} live video(s) from "${author.name}"`)
+      if (!youtubeRateLimited) {
+        try {
+          const seenIds = new Set([...knownVideoIds, ...newVideos.map((v) => v.videoId)])
+          liveVideos = await fetchChannelLiveVideos(author.channelId, 5, seenIds)
+          if (liveVideos.length > 0) {
+            console.log(`[Pipeline] Fetched ${liveVideos.length} live video(s) from "${author.name}"`)
+          }
+        } catch (liveError) {
+          if (isYouTubeRateLimitError(liveError)) {
+            youtubeRateLimited = true
+            console.warn(
+              `[Pipeline] YouTube rate-limited while fetching live streams for "${author.name}"`,
+            )
+          } else {
+            console.error(`[Pipeline] Error fetching live streams for "${author.name}":`, liveError)
+          }
         }
-      } catch (liveError) {
-        console.error(`[Pipeline] Error fetching live streams for "${author.name}":`, liveError)
       }
 
       let workItems: WorkItem[] = [...newVideos, ...liveVideos].map((data) => ({
@@ -402,5 +477,5 @@ export async function runNewsPipeline(): Promise<{
     errors++
   }
 
-  return { processed, articles, errors }
+  return { processed, articles, errors, youtubeRateLimited }
 }

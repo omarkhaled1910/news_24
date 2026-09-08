@@ -5,7 +5,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 /**
  * `revalidatePath`/`revalidateTag` only work inside an active Next.js request
  * (they read from a request-scoped store). The news pipeline can run outside
- * any request — e.g. the in-process node-cron scheduler in `utilities/cron.ts`
+ * any request — e.g. the in-process scheduler in `utilities/cron.ts`
  * — in which case this throws. That's expected there, not a real failure: the
  * article page itself is `force-dynamic` (always fresh) and the homepage has
  * a 60s time-based fallback, so content still shows up shortly either way.

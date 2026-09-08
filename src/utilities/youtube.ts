@@ -57,8 +57,21 @@ function parseViewCount(text: string): number {
 }
 
 /**
+ * Detect a YouTube "too many requests" / rate-limit response. youtubei.js's
+ * HTTPClient throws `InnertubeError('Request to <url> failed with status
+ * code 429', ...)` for any non-ok HTTP response, so this matches on that
+ * exact status code substring rather than a generic network failure.
+ */
+export function isYouTubeRateLimitError(error: unknown): boolean {
+  return error instanceof Error && /status code 429/.test(error.message)
+}
+
+/**
  * Check whether a video is currently broadcasting live (as opposed to a
  * finished livestream/VOD). Used to skip in-progress lives until they end.
+ *
+ * A rate-limit error is re-thrown (not swallowed) so callers can back off,
+ * rather than silently treating a rate-limited check as "not live".
  */
 export async function isVideoCurrentlyLive(videoId: string): Promise<boolean> {
   try {
@@ -66,6 +79,7 @@ export async function isVideoCurrentlyLive(videoId: string): Promise<boolean> {
     const info = await yt.getBasicInfo(videoId)
     return info?.basic_info?.is_live === true
   } catch (error) {
+    if (isYouTubeRateLimitError(error)) throw error
     console.error(`Error checking live status for ${videoId}:`, error)
     return false
   }
@@ -182,6 +196,12 @@ async function fetchChannelFeed(
           viewCount,
         })
       }
+
+      // An empty page means we've exhausted the feed — for some (typically
+      // smaller) channels, `has_continuation` stays true forever even past
+      // the last real page, so blindly trusting it wastes a request to
+      // YouTube on every single pipeline run for an author with nothing new.
+      if (videos.length === 0) break
 
       // If we still need more, load the next page
       if (results.length < maxResults && feed.has_continuation) {

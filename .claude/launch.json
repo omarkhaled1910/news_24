@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "news24-dev",
+      "runtimeExecutable": "/Users/omarkhaled/Desktop/projects/news_24/node_modules/.bin/next",
+      "runtimeArgs": ["dev", "--port", "3411"],
+      "port": 3411
+    }
+  ]
+}

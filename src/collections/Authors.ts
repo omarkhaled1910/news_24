@@ -4,6 +4,7 @@ import { authenticated } from '../access/authenticated'
 import { anyone } from '../access/anyone'
 import { revalidateAuthor, revalidateDelete } from './Authors/hooks/revalidateAuthor'
 import { slugField } from 'payload'
+import { AI_MODELS, AI_MODEL_OPENAI_DIRECT } from '../utilities/aiModels'
 
 import {
   MetaDescriptionField,
@@ -277,6 +278,18 @@ export const Authors: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
+      },
+    },
+    {
+      name: 'aiModel',
+      label: 'نموذج الذكاء الاصطناعي',
+      type: 'select',
+      defaultValue: AI_MODEL_OPENAI_DIRECT,
+      options: AI_MODELS,
+      admin: {
+        position: 'sidebar',
+        description:
+          'النموذج المستخدم لتوليد مقالات هذا الكاتب. أي خيار غير "OpenAI مباشر" يتم إرساله عبر OpenRouter (يتطلب NEXT_PRIVATE_OPENROUTER_API_KEY).',
       },
     },
     {

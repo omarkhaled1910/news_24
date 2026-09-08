@@ -17,6 +17,7 @@ import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { revalidateDelete, revalidateArticle } from './hooks/revalidateArticle'
 import { slugField } from 'payload'
 import type { Slugify } from 'payload/shared'
+import { AI_MODELS, AI_MODEL_OPENAI_DIRECT } from '../../utilities/aiModels'
 
 /**
  * Slugify text while supporting Arabic (and other Unicode) characters.
@@ -144,6 +145,17 @@ export const Articles: CollectionConfig = {
               defaultValue: false,
               admin: {
                 readOnly: true,
+              },
+            },
+            {
+              name: 'aiModel',
+              label: 'نموذج الذكاء الاصطناعي',
+              type: 'select',
+              defaultValue: AI_MODEL_OPENAI_DIRECT,
+              options: AI_MODELS,
+              admin: {
+                readOnly: true,
+                description: 'النموذج الذي كتب هذا المقال فعلياً (يحدده الـ pipeline تلقائياً).',
               },
             },
             {

@@ -1,9 +1,11 @@
 import OpenAI from 'openai'
+import { AI_MODEL_OPENAI_DIRECT } from './aiModels'
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 const MAX_TRANSCRIPT_CHARS = 12_000
 const MAX_TOKENS = 4_000
 const TEMPERATURE = 0.3
@@ -78,14 +80,50 @@ Respond in JSON format with the following structure:
 Note: The tags array must contain 20-25 accurate tags.`
 
 // ---------------------------------------------------------------------------
-// OpenAI client (lazy)
+// OpenAI / OpenRouter client (lazy)
 // ---------------------------------------------------------------------------
-const getOpenAIClient = () => {
-  const apiKey = process.env.NEXT_PRIVATE_OPENAI_API_KEY
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is not set')
+
+/**
+ * Build the client to use for a given author's `aiModel` selection.
+ * `aiModel: AI_MODEL_OPENAI_DIRECT` (or unset) keeps the original direct-OpenAI
+ * behavior; any other value is an OpenRouter model slug, sent through
+ * OpenRouter's OpenAI-compatible endpoint instead.
+ *
+ * Returns both the model id to send to the API (`apiModel`) and the value to
+ * record as the article's `aiModel` (`selectedValue`) — these differ for the
+ * direct-OpenAI case, where the API needs a real model id (e.g.
+ * "gpt-4o-mini") but the recorded value must match one of `AI_MODELS`
+ * (the `AI_MODEL_OPENAI_DIRECT` sentinel).
+ */
+function getClientForModel(
+  aiModel: string | null | undefined,
+): { client: OpenAI; apiModel: string; selectedValue: string } {
+  const selected = aiModel || AI_MODEL_OPENAI_DIRECT
+
+  if (selected === AI_MODEL_OPENAI_DIRECT) {
+    const apiKey = process.env.NEXT_PRIVATE_OPENAI_API_KEY
+    if (!apiKey) {
+      throw new Error('NEXT_PRIVATE_OPENAI_API_KEY environment variable is not set')
+    }
+    return { client: new OpenAI({ apiKey }), apiModel: OPENAI_MODEL, selectedValue: AI_MODEL_OPENAI_DIRECT }
   }
-  return new OpenAI({ apiKey })
+
+  const apiKey = process.env.NEXT_PRIVATE_OPENROUTER_API_KEY
+  if (!apiKey) {
+    throw new Error('NEXT_PRIVATE_OPENROUTER_API_KEY environment variable is not set')
+  }
+  return {
+    client: new OpenAI({
+      apiKey,
+      baseURL: OPENROUTER_BASE_URL,
+      defaultHeaders: {
+        'HTTP-Referer': process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',
+        'X-Title': 'News-24',
+      },
+    }),
+    apiModel: selected,
+    selectedValue: selected,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +156,8 @@ export interface GeneratedArticle {
   excerpt: string
   content: string // Structured text that we convert to Lexical
   tags: string[]
+  /** The AI model that actually generated this article — one of `AI_MODELS`' values. */
+  aiModel: string
 }
 
 export interface LexicalTextNode {
@@ -160,12 +200,13 @@ export async function generateArticleFromTranscript(
   channelName: string,
   youtubeUrl: string,
   language: string = 'ar',
+  aiModel?: string | null,
 ): Promise<GeneratedArticle> {
   // Input validation
   if (!transcript?.trim()) throw new Error('[OpenAI] Transcript is empty')
   if (!videoTitle?.trim()) throw new Error('[OpenAI] Video title is empty')
 
-  const openai = getOpenAIClient()
+  const { client: openai, apiModel, selectedValue } = getClientForModel(aiModel)
 
   // Warn on truncation
   if (transcript.length > MAX_TRANSCRIPT_CHARS) {
@@ -193,7 +234,7 @@ ${transcript.substring(0, MAX_TRANSCRIPT_CHARS)}`
 
   const response = await callWithRetry(() =>
     openai.chat.completions.create({
-      model: OPENAI_MODEL,
+      model: apiModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -244,6 +285,7 @@ ${transcript.substring(0, MAX_TRANSCRIPT_CHARS)}`
     excerpt: (parsed.excerpt as string) || '',
     content: contentParts.join('\n\n'),
     tags: (parsed.tags as string[]) || [],
+    aiModel: selectedValue,
   }
 }
 

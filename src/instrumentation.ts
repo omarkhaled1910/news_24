@@ -4,7 +4,8 @@
  * Used to initialize the automated news cron job.
  *
  * Note: On Vercel, cron jobs are handled by Vercel Cron via vercel.json
- * which calls /api/cron endpoint, so we don't start node-cron there.
+ * which calls /api/cron endpoint, so we don't start the in-process
+ * scheduler there.
  */
 export async function register() {
   // Only run on the Node.js server runtime (not Edge)
