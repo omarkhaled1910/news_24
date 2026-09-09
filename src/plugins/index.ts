@@ -98,6 +98,12 @@ export const plugins: Plugin[] = [
         disablePayloadAccessControl: true,
         generateFileURL: ({ filename, prefix }) => {
           const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '')
+          if (!base) {
+            // Fail loudly instead of silently storing "undefined/storage/..." as the file URL.
+            throw new Error(
+              'NEXT_PUBLIC_SUPABASE_URL is not set — cannot generate a public Supabase Storage URL for uploaded media.',
+            )
+          }
           const bucket = process.env.NEXT_PRIVATE_SUPABASE_STORAGE_BUCKET_NAME
           const key = prefix ? `${prefix}/${filename}` : filename
           return `${base}/storage/v1/object/public/${bucket}/${key}`
