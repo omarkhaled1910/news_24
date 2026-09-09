@@ -13,6 +13,15 @@ export const getMediaUrl = (url: string | null | undefined, cacheTag?: string | 
 
   let resolved = url
 
+  // Repair URLs corrupted by a missing NEXT_PUBLIC_SUPABASE_URL at upload time,
+  // which were stored as the literal string "undefined/storage/v1/object/public/...".
+  if (resolved.startsWith('undefined/storage/v1/object/public/')) {
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '')
+    if (base) {
+      resolved = resolved.replace(/^undefined/, base)
+    }
+  }
+
   if (resolved.startsWith('/api/media/file/')) {
     const filename = resolved.split('/').pop()?.split('?')[0] || ''
     resolved = `/api/media/file/${filename}`
